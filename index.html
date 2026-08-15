@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invoice System — Yak Yim Thai Kitchen</title>
+<style>
+  :root{
+    --navy: #1c4e73;
+    --navy-dark: #143a56;
+    --navy-darker: #0e2c42;
+    --cream: #faf7f0;
+    --paper: #ffffff;
+    --ink: #23303d;
+    --ink-soft: #5c6b7a;
+    --line: #dde3e9;
+    --gold: #c8963f;
+    --red: #b3271f;
+    --row-a: #fffdf3;
+    --row-b: #eaf2f8;
+    --good: #2f7d4f;
+    --good-bg: #e7f5ec;
+    --bad: #b3271f;
+    --bad-bg: #fbeceb;
+    --radius: 10px;
+    --shadow: 0 1px 2px rgba(20,40,60,.06), 0 6px 20px rgba(20,40,60,.06);
+    font-family: "Segoe UI", "Noto Sans Thai", Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--cream);color:var(--ink);}
+  body{min-height:100vh;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select,textarea{font-family:inherit;}
+
+  /* ===== App Shell ===== */
+  #app{max-width:1180px;margin:0 auto;padding:20px 20px 60px;}
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    background:linear-gradient(135deg,var(--navy),var(--navy-darker));
+    color:#fff;border-radius:var(--radius);padding:18px 22px;box-shadow:var(--shadow);
+    margin-bottom:20px;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{
+    width:42px;height:42px;border-radius:10px;background:rgba(255,255,255,.15);
+    display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;
+    border:1px solid rgba(255,255,255,.25);
+  }
+  .brand-text h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.2px;}
+  .brand-text p{margin:2px 0 0;font-size:12px;color:#cfe0ee;}
+  .topbar-actions{display:flex;gap:8px;}
+  .crumbs{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-soft);margin:0 2px 16px;flex-wrap:wrap;}
+  .crumbs button{background:none;border:none;color:var(--navy);font-weight:600;padding:2px 4px;border-radius:6px;font-size:13px;}
+  .crumbs button:hover{background:#e7eef4;}
+  .crumbs .sep{color:#b6c1cb;}
+  .crumbs .current{color:var(--ink);font-weight:600;}
+
+  /* ===== Buttons ===== */
+  .btn{
+    border:1px solid var(--line);background:#fff;color:var(--ink);
+    padding:9px 15px;border-radius:8px;font-size:13.5px;font-weight:600;
+    display:inline-flex;align-items:center;gap:7px;transition:.15s;white-space:nowrap;
+  }
+  .btn:hover{border-color:var(--navy);color:var(--navy);}
+  .btn-primary{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .btn-primary:hover{background:var(--navy-dark);color:#fff;}
+  .btn-gold{background:var(--gold);border-color:var(--gold);color:#fff;}
+  .btn-gold:hover{background:#b3822f;color:#fff;}
+  .btn-ghost{background:transparent;border-color:transparent;color:var(--navy);padding:8px 10px;}
+  .btn-ghost:hover{background:#e7eef4;}
+  .btn-danger{color:var(--red);border-color:#f0c9c7;}
+  .btn-danger:hover{background:var(--bad-bg);border-color:var(--red);}
+  .btn-sm{padding:6px 10px;font-size:12.5px;border-radius:7px;}
+  .btn[disabled]{opacity:.45;cursor:not-allowed;}
+  .btn-icon{width:34px;height:34px;padding:0;justify-content:center;border-radius:8px;}
+  .topbar .btn{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.3);color:#fff;}
+  .topbar .btn:hover{background:rgba(255,255,255,.2);color:#fff;}
+  .topbar .btn-gold{background:var(--gold);border-color:var(--gold);}
+
+  /* ===== Cards / layout ===== */
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);}
+  .card-pad{padding:20px;}
+  .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+  .section-head h2{font-size:17px;margin:0;}
+  .section-head .hint{font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
+
+  .grid-shops{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px;}
+  .shop-card{
+    background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px;box-shadow:var(--shadow);cursor:pointer;transition:.15s;position:relative;
+  }
+  .shop-card:hover{border-color:var(--navy);transform:translateY(-1px);}
+  .shop-card .tag{
+    position:absolute;top:14px;right:14px;font-size:11px;background:var(--good-bg);color:var(--good);
+    padding:3px 9px;border-radius:20px;font-weight:700;
+  }
+  .shop-card h3{margin:0 92px 6px 0;font-size:15.5px;color:var(--navy-darker);line-height:1.35;}
+  .shop-card .addr{font-size:12px;color:var(--ink-soft);line-height:1.5;min-height:36px;white-space:pre-line;}
+  .shop-card .stats{display:flex;gap:16px;margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);}
+  .shop-card .stat b{display:block;font-size:16px;color:var(--navy);}
+  .shop-card .stat span{font-size:11px;color:var(--ink-soft);}
+  .shop-card .kebab{position:absolute;bottom:12px;right:10px;}
+
+  .empty{
+    text-align:center;padding:50px 20px;color:var(--ink-soft);
+  }
+  .empty .big{font-size:34px;margin-bottom:8px;}
+  .empty h3{color:var(--ink);margin:0 0 6px;}
+
+  /* ===== Tables ===== */
+  table.list{width:100%;border-collapse:collapse;font-size:13.5px;}
+  table.list th{
+    text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;
+    color:var(--ink-soft);border-bottom:2px solid var(--line);padding:9px 10px;font-weight:700;
+  }
+  table.list td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  table.list tr:hover td{background:#f7fafc;}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:20px;}
+  .pill-paid{background:var(--good-bg);color:var(--good);}
+  .pill-unpaid{background:var(--bad-bg);color:var(--bad);}
+  .row-actions{display:flex;gap:6px;justify-content:flex-end;}
+  .mono{font-variant-numeric:tabular-nums;font-family:"Consolas","SFMono-Regular",monospace;}
+  .num-right{text-align:right;}
+
+  /* ===== Forms ===== */
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:2px;}
+  .field label{font-size:12px;font-weight:700;color:var(--ink-soft);}
+  .field input,.field select,.field textarea{
+    border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:13.5px;color:var(--ink);
+    background:#fff;
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{outline:2px solid #bcd4e6;border-color:var(--navy);}
+  .field textarea{resize:vertical;min-height:64px;}
+  .field .req{color:var(--red);}
+  .field-note{font-size:11px;color:var(--ink-soft);}
+
+  /* ===== Modal ===== */
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(15,30,45,.5);display:flex;align-items:flex-start;justify-content:center;
+    padding:40px 16px;z-index:100;overflow-y:auto;
+  }
+  .modal{
+    background:#fff;border-radius:14px;max-width:560px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25);
+    animation:pop .15s ease-out;
+  }
+  .modal.wide{max-width:960px;}
+  @keyframes pop{from{transform:translateY(6px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--line);}
+  .modal-head h3{margin:0;font-size:16px;}
+  .modal-body{padding:20px;max-height:72vh;overflow-y:auto;}
+  .modal-foot{padding:16px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;}
+  .close-x{background:none;border:none;font-size:20px;color:var(--ink-soft);line-height:1;padding:4px 6px;border-radius:6px;}
+  .close-x:hover{background:#f0f2f4;color:var(--ink);}
+
+  /* ===== Invoice line item editor ===== */
+  .item-table{width:100%;border-collapse:collapse;margin-top:8px;}
+  .item-table th{font-size:11px;text-transform:uppercase;color:var(--ink-soft);text-align:left;padding:6px 6px;border-bottom:2px solid var(--line);}
+  .item-table td{padding:5px 6px;vertical-align:top;}
+  .item-table input{width:100%;border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:13px;}
+  .item-table input.qty,.item-table input.price{text-align:right;}
+  .item-table .amt{font-weight:700;text-align:right;padding-top:8px;font-size:13px;white-space:nowrap;}
+  .item-table .rm{background:none;border:none;color:#b7c0c8;font-size:16px;padding:4px 8px;border-radius:6px;}
+  .item-table .rm:hover{color:var(--red);background:var(--bad-bg);}
+  .add-row-btn{margin-top:10px;}
+  .totals-box{display:flex;justify-content:flex-end;margin-top:14px;}
+  .totals-box table{border-collapse:collapse;}
+  .totals-box td{padding:6px 14px;font-size:14px;}
+  .totals-box tr.grand td{font-size:17px;font-weight:800;color:var(--navy-darker);border-top:2px solid var(--line);padding-top:10px;}
+  .status-toggle{display:flex;gap:8px;}
+  .status-toggle label{
+    flex:1;text-align:center;border:1px solid var(--line);border-radius:8px;padding:9px;font-size:13px;font-weight:700;
+    cursor:pointer;color:var(--ink-soft);
+  }
+  .status-toggle input{display:none;}
+  .status-toggle input:checked + span{}
+  .status-toggle .opt-unpaid input:checked ~ span{color:var(--bad);}
+  .status-toggle label.sel-unpaid{border-color:var(--bad);background:var(--bad-bg);color:var(--bad);}
+  .status-toggle label.sel-paid{border-color:var(--good);background:var(--good-bg);color:var(--good);}
+
+  .datalist-wrap{position:relative;}
+  .toast{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+    background:var(--navy-darker);color:#fff;padding:11px 20px;border-radius:30px;font-size:13.5px;
+    box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:200;display:flex;align-items:center;gap:8px;
+  }
+
+  /* ===== Invoice document (preview / print) ===== */
+  .doc-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+  .doc-wrap{background:#eef1f4;padding:22px;border-radius:var(--radius);}
+  .invoice-doc{
+    background:#fff;max-width:820px;margin:0 auto;box-shadow:0 4px 20px rgba(0,0,0,.12);
+    font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;
+  }
+  .doc-header{background:var(--navy);color:#fff;padding:18px 26px 14px;text-align:center;}
+  .doc-header h1{margin:0 0 4px;font-size:22px;letter-spacing:.3px;}
+  .doc-header .reg{font-size:12px;color:#dbe7f0;margin-bottom:2px;}
+  .doc-header .addr{font-size:12px;color:#dbe7f0;}
+  .doc-meta{display:flex;justify-content:space-between;border-bottom:2px solid var(--navy);padding:14px 26px;font-size:13px;}
+  .doc-meta .bill-to{white-space:pre-line;line-height:1.55;}
+  .doc-meta .meta-table td{padding:1px 0;font-size:13px;}
+  .doc-meta .meta-table td:first-child{color:#444;padding-right:10px;}
+  .doc-meta .meta-table .inv-no{color:var(--red);font-weight:800;}
+  .doc-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .doc-table thead th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-size:12px;}
+  .doc-table thead th.r{text-align:right;}
+  .doc-table tbody td{padding:6px 10px;border-bottom:1px solid #eee;}
+  .doc-table tbody td.r{text-align:right;}
+  .doc-table tbody tr:nth-child(odd){background:var(--row-a);}
+  .doc-table tbody tr:nth-child(even){background:var(--row-b);}
+  .doc-total-row td{font-weight:800;border-top:2px solid var(--navy);background:#fff !important;padding:10px;}
+  .doc-subtotal-row td{font-weight:600;background:#fff !important;padding:6px 10px;color:#555;font-size:12px;}
+  .doc-footer{padding:16px 26px 22px;font-size:11.5px;color:#555;text-align:center;}
+  .doc-footer .cgen{margin-bottom:14px;}
+  .doc-footer .thanks{font-weight:700;color:var(--navy-darker);}
+  .doc-status{
+    display:inline-block;margin-top:10px;font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;
+  }
+  .doc-status-bar{
+    max-width:820px;margin:14px auto 0;display:flex;align-items:center;justify-content:center;gap:10px;
+    font-size:12.5px;color:var(--ink-soft);flex-wrap:wrap;
+  }
+  .pill-btn{border:none;cursor:pointer;font-size:12px;}
+  .pill-btn:hover{filter:brightness(0.95);}
+
+  @media print{
+    *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
+    body *{visibility:hidden;}
+    .invoice-doc,.invoice-doc *{visibility:visible;}
+    .invoice-doc{position:absolute;top:0;left:0;box-shadow:none;max-width:100%;}
+    .doc-wrap{padding:0;background:#fff;}
+    @page{margin:14mm;}
+  }
+
+  @media (max-width:640px){
+    .form-grid{grid-template-columns:1fr;}
+    #app{padding:12px;}
+    .topbar{flex-direction:column;align-items:flex-start;gap:12px;}
+    .topbar-actions{width:100%;}
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal-root"></div>
+<div id="toast-root"></div>
+
+<script>
+/* ============================================================
+   SEED DATA (first-run only — imported from the two supplied
+   Yak Yim Thai Kitchen invoice workbooks)
+   ============================================================ */
+const SEED_DATA = {"company": {"name": "Yak Yim Thai Kitchen (M) SDN BHD", "regNo": "202601005521 (1667619-K)", "address": "26, Jalan 20/16a, Taman Paramount, 46300 Petaling Jaya, Selangor", "tel": "010-896 5928", "footerNote": "Thank you for your business!  —  Yakyim Thai Kitchen (M) SDN BHD"}, "shops": [{"id": "sp-sports-academy", "name": "SP Sports Academy Sdn Bhd", "billTo": ["Lee Boon Hui  /  SP Sports Academy Sdn Bhd.", "LOT 9, REZAB BAWAH, MEX CHERAS BATU 2 1/2", "56100 CHERAS, KUALA LUMPUR"]}, {"id": "yykj-enterprise", "name": "YYKJ Enterprise", "billTo": ["YYKJ Enterprise", "No.71 Jalan ss25/2 Taman Bukit Emas", "Attn: Mr Lee Boon Hui  |  Tel: 0125592405"]}], "products": [{"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "price": 10.0, "unit": "Kilogram"}, {"code": "002", "desc": "Baked Shrimp Vermicelli Sauce ซอสกุ้งอบวุ้นเส้น", "price": 6.0, "unit": "Kilogram"}, {"code": "003", "desc": "Clear Tom Yum Soup Sauce ต้มยำน้ำใส", "price": 12.0, "unit": "Kilogram"}, {"code": "004", "desc": "Fermented Fish Papaya Salad Sauce ซอสส้มตำปลาร้า", "price": 24.0, "unit": "Kilogram"}, {"code": "005", "desc": "Fish with Herbs Sauce ซอสปลาทอดสมุนไพร", "price": 20.0, "unit": "Kilogram"}, {"code": "006", "desc": "Fried Rice Seasoning Powder ผงผัดข้าว", "price": 16.0, "unit": "Kilogram"}, {"code": "007", "desc": "Green Curry Sauce ซอสแกงเขียวหวาน", "price": 15.0, "unit": "Kilogram"}, {"code": "008", "desc": "Grilled Pork Neck Sauce ซอสคอหมูย่าง", "price": 8.0, "unit": "Kilogram"}, {"code": "009", "desc": "Pad Thai Sauce ซอสผัดไทย", "price": 10.0, "unit": "Kilogram"}, {"code": "010", "desc": "Panang Curry Sauce ซอสพะแนง", "price": 15.0, "unit": "Kilogram"}, {"code": "011", "desc": "Pandan Chicken Marinade Sauce ซอสหมักไก่ใบเตย", "price": 0, "unit": "Kilogram"}, {"code": "012", "desc": "Papaya Salad Sauce ซอสส้มตำไทย", "price": 15.0, "unit": "Kilogram"}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "price": 15.0, "unit": "Kilogram"}, {"code": "014", "desc": "Shrimp Donut ทอดมันกุ้ง", "price": 31.0, "unit": "Kilogram"}, {"code": "015", "desc": "Shrimp Paste Rice Sauce ซอสข้าวคลุกกะปิ", "price": 12.0, "unit": "Kilogram"}, {"code": "016", "desc": "Sour Curry Sauce ซอสแกงส้ม", "price": 6.0, "unit": "Kilogram"}, {"code": "017", "desc": "Spicy Thai Salad Sauce ซอสยำ", "price": 12.0, "unit": "Kilogram"}, {"code": "018", "desc": "Salted egg sauce ซอสไข่เค็ม", "price": 65.0, "unit": "Kilogram"}, {"code": "019", "desc": "100 Plus", "price": 1.48, "unit": "Can"}, {"code": "020", "desc": "Ajinomoto MSG", "price": 14.4, "unit": "Pack"}, {"code": "021", "desc": "Aroi-D Coconut Milk 1000ml", "price": 13.0, "unit": "Bottle"}, {"code": "022", "desc": "Aroi-D Coconut Milk 250ml", "price": 4.388888889, "unit": "Bottle"}, {"code": "023", "desc": "Bihoon traditional", "price": 4.0, "unit": "Pack"}, {"code": "024", "desc": "Black Pepper", "price": 110.0, "unit": "Kilogram"}, {"code": "025", "desc": "Boat Noodle", "price": 5.0, "unit": "Pack"}, {"code": "026", "desc": "Bread Crumbs kruawanthip 1kg", "price": 16.0, "unit": "Pack"}, {"code": "027", "desc": "Brown Sugar", "price": 6.17, "unit": "Kilogram"}, {"code": "028", "desc": "Cashew Nuts", "price": 58.0, "unit": "Kilogram"}, {"code": "029", "desc": "Chang Beer", "price": 155.0, "unit": "CTN"}, {"code": "030", "desc": "Cha Tra Mue Green Tea", "price": 11.25, "unit": "Pack"}, {"code": "031", "desc": "Cha Tra Mue Red Tea", "price": 11.25, "unit": "Pack"}, {"code": "032", "desc": "Cha Tra Mue Thai Coffee", "price": 11.25, "unit": "Pack"}, {"code": "033", "desc": "Chicken Floss 500.g", "price": 25.0, "unit": "Pack"}, {"code": "034", "desc": "Chicken Seasoning Powder", "price": 16.0, "unit": "Pack"}, {"code": "035", "desc": "Chili Flakes 500 g", "price": 13.5, "unit": "Pack"}, {"code": "036", "desc": "Chili oil (น้ำมันพริกเผา)", "price": 12.5, "unit": "Bottle"}, {"code": "037", "desc": "Chili  Paste 1 kg (พริกเผาฉั่วฮะเส็ง)", "price": 14.17, "unit": "Pack"}, {"code": "038", "desc": "Chili sauce (ซอสพริก)", "price": 50.0, "unit": "Gallon"}, {"code": "039", "desc": "Chinese Cooking Wine", "price": 23.0, "unit": "Bottle"}, {"code": "040", "desc": "Chinese Five spice powder (ผงพะโล้ตราสวนไทย) 500 g", "price": 26.0, "unit": "Bottle"}, {"code": "041", "desc": "Classic ground chili & sugar 5gm x 50", "price": 10, "unit": "Pack"}, {"code": "042", "desc": "Coca-Cola", "price": 1.48, "unit": "Can"}, {"code": "043", "desc": "Coconut Milk Scented Candle( กะทิรมควันอร่อยดี)", "price": 13.625, "unit": "Box"}, {"code": "044", "desc": "Coffee Mate", "price": 19.83, "unit": "Pack"}, {"code": "045", "desc": "Crispy ikan bilis (ปลากรอบ)", "price": 28.0, "unit": "Kilogram"}, {"code": "046", "desc": "Curry Powder", "price": 27.5, "unit": "Pack"}, {"code": "047", "desc": "Dark Soy Sauce", "price": 31.0, "unit": "Bottle"}, {"code": "048", "desc": "Distilled Vinegar", "price": 18.0, "unit": "Gallon"}, {"code": "049", "desc": "Dried Chili", "price": 35.0, "unit": "Kilogram"}, {"code": "050", "desc": "Big Dried Shrimp 500gm (กุ้งแก้ว)", "price": 120.0, "unit": "Kilogram"}, {"code": "051", "desc": "Evaporated Creamer", "price": 3.23, "unit": "Can"}, {"code": "052", "desc": "Fanta Orange", "price": 0, "unit": "Can"}, {"code": "053", "desc": "FF instant noodle (เส้นมาม่า ff)", "price": 12.0, "unit": "Pack"}, {"code": "054", "desc": "Fish sauce 4500ml (น้ำปลาทิพรส)", "price": 33.0, "unit": "Gallon"}, {"code": "055", "desc": "Fish sauce 700ml", "price": 5.5, "unit": "Bottle"}, {"code": "056", "desc": "Fried Garlic 500 g", "price": 10.0, "unit": "Pack"}, {"code": "057", "desc": "Fried Shallots", "price": 24.0, "unit": "Kilogram"}, {"code": "058", "desc": "Glass Noodles", "price": 12.5, "unit": "Pack"}, {"code": "059", "desc": "Thai white pepper70gmx6 (พริกไทยป่นตราปืน)", "price": 4.0, "unit": "Bottle"}, {"code": "060", "desc": "Hale blue boy Red (เฮลบลูบอย)", "price": 11.5, "unit": "Bottle"}, {"code": "061", "desc": "Hongthai", "price": 5.0, "unit": "Piece"}, {"code": "062", "desc": "Iodised Vacuum Salt", "price": 0.75, "unit": "Pack"}, {"code": "063", "desc": "Kara Coconut Milk 1000ml", "price": 15.83, "unit": "Bottle"}, {"code": "064", "desc": "Kara Coconut Milk 100ml", "price": 2.44, "unit": "Bottle"}, {"code": "065", "desc": "Khanom Jeen", "price": 0, "unit": "Pack"}, {"code": "066", "desc": "Ladna Noodles", "price": 7.0, "unit": "Kilogram"}, {"code": "067", "desc": "Lime Juice", "price": 4.33, "unit": "Bottle"}, {"code": "068", "desc": "Lime powder (ผงมะนาว)", "price": 13.5, "unit": "Pack"}, {"code": "069", "desc": "Longan", "price": 35.5, "unit": "Kilogram"}, {"code": "070", "desc": "Mineral Water", "price": 1.17, "unit": "Bottle"}, {"code": "071", "desc": "Mongkornbin Thai Coffee", "price": 19.67, "unit": "Pack"}, {"code": "072", "desc": "Mongkornbin Thai Red Tea", "price": 10.67, "unit": "Pack"}, {"code": "073", "desc": "Oyster Sauce", "price": 13, "unit": "Gallon"}, {"code": "074", "desc": "Pad Thai Noodles", "price": 6.0, "unit": "Kilogram"}, {"code": "075", "desc": "Palm Sugar", "price": 3.25, "unit": "Pack"}, {"code": "076", "desc": "Pati Sup (Five Spice Pack)", "price": 2.2, "unit": "Pack"}, {"code": "077", "desc": "Peanuts", "price": 9.0, "unit": "Kilogram"}, {"code": "078", "desc": "PKT เเม่เหรียญ", "price": 6.0, "unit": "Bottle"}, {"code": "079", "desc": "PKT เเม่อิพิม", "price": 6.83, "unit": "Bottle"}, {"code": "080", "desc": "Raisins 500g", "price": 15.0, "unit": "Pack"}, {"code": "081", "desc": "Rai Thip Sticky Rice", "price": 8.5, "unit": "Kilogram"}, {"code": "082", "desc": "Rock Sugar", "price": 7.0, "unit": "Pack"}, {"code": "083", "desc": "Rubbie color", "price": 0, "unit": "Bottle"}, {"code": "084", "desc": "Sesame Oil", "price": 15.5, "unit": "Bottle"}, {"code": "085", "desc": "Shrimp Paste", "price": 20.0, "unit": "Bottle"}, {"code": "086", "desc": "Singha Beer", "price": 155.0, "unit": "CTN"}, {"code": "087", "desc": "Singha Lemon Soda", "price": 0, "unit": "Can"}, {"code": "088", "desc": "Singha Soda", "price": 2.0, "unit": "Bottle"}, {"code": "089", "desc": "Soy seasoning sauce 3L (ซอสปรุงรสฝาเขียว)", "price": 23.0, "unit": "Gallon"}, {"code": "090", "desc": "Sprite", "price": 0, "unit": "Can"}, {"code": "091", "desc": "Spy Classic", "price": 0, "unit": "Bottle"}, {"code": "092", "desc": "Spy Red", "price": 0, "unit": "Bottle"}, {"code": "093", "desc": "Sweet Chili sauce (น้ำจิ้มไก่)", "price": 50.0, "unit": "Gallon"}, {"code": "094", "desc": "Sweetened Condensed Creamer", "price": 3.23, "unit": "Can"}, {"code": "095", "desc": "sweet &sour plum sauce 5.7kg (น้ำจิ้มบ๊วย)", "price": 35.0, "unit": "Bottle"}, {"code": "096", "desc": "Tamarind Sauce", "price": 18.89, "unit": "Pack"}, {"code": "097", "desc": "Premium Quality Tapioca Starch1kg (แป้งมัน)", "price": 9.0, "unit": "Kilogram"}, {"code": "098", "desc": "Tempura flour kruawanthip (แป้งทอดกรอบ)", "price": 8.0, "unit": "Pack"}, {"code": "099", "desc": "Thai Rice Noodles", "price": 6.0, "unit": "Kilogram"}, {"code": "100", "desc": "Thin soy sauce 4500ml (ซีอิ้วขาว)", "price": 39.015, "unit": "Gallon"}, {"code": "101", "desc": "Tomato Ketchup 5.5kg (ซอสมะเขือเทศ)", "price": 38.0, "unit": "Gallon"}, {"code": "102", "desc": "White Pepper", "price": 63.0, "unit": "Kilogram"}, {"code": "103", "desc": "White sugar (น้ำตาลทราย)", "price": 3.33, "unit": "Pack"}, {"code": "173", "desc": "Plastic cup SC25", "price": 0.07, "unit": "Piece"}, {"code": "174", "desc": "Plastic cup T4", "price": 0.15, "unit": "Piece"}, {"code": "175", "desc": "Pop-up tissue 2 layer", "price": 60.0, "unit": "Unit"}, {"code": "176", "desc": "Straw", "price": 2.4, "unit": "Unit"}, {"code": "177", "desc": "Singlet bag 43×45.7cm (Orange  color )", "price": 5.2, "unit": "Unit"}, {"code": "178", "desc": "Singlet bag  JC28", "price": 2.7, "unit": "Unit"}, {"code": "179", "desc": "Round container T12", "price": 0, "unit": "Unit"}, {"code": "180", "desc": "Round container T16", "price": 106.0, "unit": "unit"}, {"code": "181", "desc": "Round container T20", "price": 0, "unit": "Unit"}, {"code": "182", "desc": "Single container 750", "price": 0.18, "unit": "Piece"}, {"code": "183", "desc": "Single container 600", "price": 0, "unit": "Unit"}, {"code": "184", "desc": "plastic bag for take away cup", "price": 1.9, "unit": "Unit"}, {"code": "185", "desc": "Wrap 450 18in", "price": 43.0, "unit": "Roll"}, {"code": "186", "desc": "HM plastic bag 10*15", "price": 5.8, "unit": "Pack"}, {"code": "187", "desc": "HM plastic bag 6*9", "price": 5.8, "unit": "Pack"}, {"code": "188", "desc": "HM plastic bag 5*8", "price": 5.8, "unit": "Pack"}, {"code": "189", "desc": "HM plastic bag 7*10", "price": 5.8, "unit": "Pack"}, {"code": "190", "desc": "Single container 1500", "price": 35.0, "unit": "Pack"}, {"code": "191", "desc": "Double containar 750 (half half size )", "price": 230.0, "unit": ""}, {"code": "192", "desc": "Wrap 300", "price": 0, "unit": ""}, {"code": "193", "desc": "Round container 1,000", "price": 21, "unit": "Pack"}, {"code": "194", "desc": "Chopsticks", "price": 1.8, "unit": "Pack"}, {"code": "195", "desc": "Fork", "price": 2.2, "unit": "Pack"}, {"code": "196", "desc": "Single container 1500", "price": 35.0, "unit": "Pack"}, {"code": "197", "desc": "Toothpick", "price": 0, "unit": ""}, {"code": "198", "desc": "spoon", "price": 2.2, "unit": "Pack"}, {"code": "199", "desc": "Rubberband", "price": 17.0, "unit": "Kilogram"}, {"code": "107", "desc": "Kangkung / Water Spinach (per kg)", "price": 4.5, "unit": "Kilogram"}, {"code": "156", "desc": "Local Kai Lan", "price": 8.0, "unit": "Kilogram"}, {"code": "109", "desc": "HK Baby Choy Sum", "price": 6.0, "unit": "Kilogram"}, {"code": "110", "desc": "Round Cabbage", "price": 5.0, "unit": "Kilogram"}, {"code": "111", "desc": "Cabbage (per kg)", "price": 5.0, "unit": "Kilogram"}, {"code": "112", "desc": "Carrot", "price": 4.0, "unit": "Kilogram"}, {"code": "113", "desc": "Tomato (per kg)", "price": 4.0, "unit": "Kilogram"}, {"code": "114", "desc": "Garlic (per kg)", "price": 8.0, "unit": "Kilogram"}, {"code": "115", "desc": "Lime leaf", "price": 20.0, "unit": "Kilogram"}, {"code": "116", "desc": "Banana leaf", "price": 15.0, "unit": "Kilogram"}, {"code": "117", "desc": "Lemongrass", "price": 4.5, "unit": "Kilogram"}, {"code": "118", "desc": "Coriander (per kg)", "price": 12.5, "unit": "Kilogram"}, {"code": "119", "desc": "Long Bean (per kg)", "price": 6.0, "unit": "Kilogram"}, {"code": "120", "desc": "Lime (per kg)", "price": 6.0, "unit": "Kilogram"}, {"code": "121", "desc": "Cauliflower", "price": 8.0, "unit": "Kilogram"}, {"code": "122", "desc": "Broccoli", "price": 10.0, "unit": "Kilogram"}, {"code": "123", "desc": "Red chili padi", "price": 12.0, "unit": "Kilogram"}, {"code": "124", "desc": "Green chili padi", "price": 12.0, "unit": "Kilogram"}, {"code": "125", "desc": "Red chili BIG", "price": 6.0, "unit": "Kilogram"}, {"code": "126", "desc": "Celery leaf", "price": 12.0, "unit": "Kilogram"}, {"code": "127", "desc": "Bean Sprout", "price": 3.0, "unit": "Kilogram"}, {"code": "128", "desc": "Galangal", "price": 9.0, "unit": "Kilogram"}, {"code": "129", "desc": "Oyster Mushroom (per pack)", "price": 9.0, "unit": "Kilogram"}, {"code": "130", "desc": "Spring onion", "price": 8.0, "unit": "Kilogram"}, {"code": "131", "desc": "Yellow onion", "price": 7.0, "unit": "Kilogram"}, {"code": "132", "desc": "Red onions", "price": 4.8, "unit": "Kilogram"}, {"code": "133", "desc": "C. Lettuce", "price": 6.0, "unit": "Kilogram"}, {"code": "134", "desc": "Baku", "price": 7.0, "unit": "Kilogram"}, {"code": "135", "desc": "sengkuang", "price": 11.0, "unit": "Kilogram"}, {"code": "136", "desc": "Cucumber (per kg)", "price": 4.5, "unit": "Kilogram"}, {"code": "137", "desc": "Pandan leaf", "price": 8.0, "unit": "Kilogram"}, {"code": "138", "desc": "Bell peppers", "price": 15.0, "unit": "Kilogram"}, {"code": "139", "desc": "Chives", "price": 10.0, "unit": "Kilogram"}, {"code": "140", "desc": "sawtooth", "price": 18.0, "unit": "Kilogram"}, {"code": "150", "desc": "mango", "price": 8.0, "unit": "Kilogram"}, {"code": "151", "desc": "round binjal", "price": 8.0, "unit": "Kilogram"}, {"code": "153", "desc": "Papaya", "price": 6.5, "unit": "Kilogram"}, {"code": "155", "desc": "Kachai", "price": 14.0, "unit": "Kilogram"}, {"code": "165", "desc": "Pork slice", "price": 23.0, "unit": "Kilogram"}, {"code": "166", "desc": "Pork shoulder", "price": 0, "unit": "Kilogram"}, {"code": "167", "desc": "Minced Pork", "price": 18.0, "unit": "Kilogram"}, {"code": "168", "desc": "Pork legs", "price": 22.0, "unit": "Kilogram"}, {"code": "169", "desc": "PTDO71/90", "price": 11.0, "unit": "Kilogram"}, {"code": "170", "desc": "Chicken Chop", "price": 15.5, "unit": "Kilogram"}, {"code": "171", "desc": "Chicken  Breast 2 kg/pack", "price": 19.6, "unit": "Pack"}, {"code": "172", "desc": "Salted egg", "price": 24.0, "unit": "Pack"}, {"code": "200", "desc": "Tamarid Sauce ซอสมะขาม", "price": 12.0, "unit": "Kilogram"}, {"code": "201", "desc": "MARIGOLD Evaporated Creamer นมข้นจืด", "price": 3.125, "unit": "Can"}, {"code": "202", "desc": "Marigold sweetened condensed milk นมข้นหวาน", "price": 3.125, "unit": "Can"}, {"code": "203", "desc": "Thai milk tea D1", "price": 13.0, "unit": "Set"}, {"code": "204", "desc": "Thai green tea D2", "price": 8.0, "unit": "Set"}, {"code": "205", "desc": "Thai coffee D4", "price": 12.0, "unit": "Set"}, {"code": "206", "desc": "Base Thai coffee D6", "price": 7.0, "unit": "Set"}, {"code": "207", "desc": "Base Thai milk tea D1", "price": 7.0, "unit": "Set"}, {"code": "208", "desc": "Base Thai green tea D2", "price": 3.5, "unit": "Set"}, {"code": "210", "desc": "Customer rice", "price": 40.0, "unit": "Pack"}, {"code": "209", "desc": "Thai black tea D09", "price": 7.0, "unit": "Set"}, {"code": "211", "desc": "Kapro", "price": 12.0, "unit": "Kilogram"}, {"code": "212", "desc": "Holy Basil", "price": 10.0, "unit": "Kilogram"}, {"code": "213", "desc": "Hot cup", "price": 0.26, "unit": "Cup"}, {"code": "108", "desc": "Take way cup", "price": 0.32, "unit": "Cup"}, {"code": "214", "desc": "Tissue toilet cowboy", "price": 4.0, "unit": "Unit"}, {"code": "215", "desc": "Egg", "price": 13.5, "unit": "Trays"}, {"code": "216", "desc": "Chicken Chop 9PCS (2KG)", "price": 31.2, "unit": "pack"}, {"code": "217", "desc": "Chu Chee Curry Sauce ซอสฉู่ฉี่", "price": 15.0, "unit": "Kilogram"}, {"code": "218", "desc": "Rice powder", "price": 10.0, "unit": "Kilogram"}, {"code": "219", "desc": "Garbage bag (S)", "price": 0, "unit": "Pack"}, {"code": "220", "desc": "Garbage bag (M)", "price": 0, "unit": "Pack"}, {"code": "221", "desc": "Garbage bag (L)", "price": 0, "unit": "Pack"}, {"code": "222", "desc": "Garbage bag (XL)", "price": 0, "unit": "Pack"}, {"code": "223", "desc": "Clear gloves", "price": 0, "unit": "Pack"}, {"code": "224", "desc": "Black gloves", "price": 0, "unit": "Pack"}, {"code": "225", "desc": "Gula Melaka", "price": 5.0, "unit": "Pack"}, {"code": "226", "desc": "Jackfruit", "price": 0, "unit": "Pack"}, {"code": "227", "desc": "Olil 5 kg", "price": 0, "unit": "Bottle"}, {"code": "228", "desc": "Curry leaves ใบกะหรี่", "price": 0, "unit": "Pack"}, {"code": "229", "desc": "Ginger ขิง", "price": 0, "unit": "Pack"}, {"code": "230", "desc": "Snow peas ถั่วลันเตา", "price": 0, "unit": "Pack"}, {"code": "231", "desc": "Fish cake ปลาเส้น", "price": 0, "unit": "Pack"}, {"code": "232", "desc": "Egg tofu เต้าหู้ไข่", "price": 0, "unit": "Pack"}, {"code": "233", "desc": "Grass jelly เฉาก๊วย", "price": 0, "unit": "Pack"}, {"code": "234", "desc": "Mixed vegetables for fried rice", "price": 0, "unit": "Pack"}, {"code": "235", "desc": "Spring roll wrappers Small แผ่นปอเปี๊ยะเล็ก", "price": 0, "unit": "Pack"}, {"code": "236", "desc": "Spring roll wrappers  Big แผ่นปอเปี๊ยะ ใหญ่", "price": 0, "unit": "Pack"}, {"code": "237", "desc": "Ripe mango มะม่วงสุก", "price": 0, "unit": "Kilogram"}, {"code": "238", "desc": "Sunkist orange ส้มซันควิสต์", "price": 0, "unit": "Pack"}, {"code": "239", "desc": "Pineapple สับปะรด", "price": 0, "unit": "Piece"}, {"code": "240", "desc": "Chinese tea ชาจีน", "price": 0, "unit": "Pack"}, {"code": "241", "desc": "Kitchen tissu", "price": 0, "unit": "Pack"}, {"code": "242", "desc": "detergent ผงซักฟอก", "price": 0, "unit": "Pack"}, {"code": "243", "desc": "Stain remover spray สเปรย์ขจัดคราบ", "price": 0, "unit": "Bottle"}, {"code": "244", "desc": "Glutinous rice flour แป้งข้าวเหนียว", "price": 0, "unit": "Kilogram"}, {"code": "245", "desc": "Gas lighter small", "price": 0, "unit": "Unit"}, {"code": "246", "desc": "Gas lighter long", "price": 0, "unit": "Unit"}, {"code": "247", "desc": "Orange bathroom cleaner", "price": 0, "unit": "Bottle"}, {"code": "141", "desc": "BB chicken ball", "price": 20.0, "unit": "Kilogram"}, {"code": "142", "desc": "chicken feet", "price": 23.0, "unit": "Kilogram"}, {"code": "143", "desc": "moo ping", "price": 75.0, "unit": "Packet"}, {"code": "144", "desc": "tiger brand rice noodle", "price": 6.5, "unit": "Kilogram"}, {"code": "145", "desc": "tiger brand pad thai noodle", "price": 6.5, "unit": "Kilogram"}, {"code": "146", "desc": "tiger brand ladna noodle", "price": 7.0, "unit": "Kilogram"}, {"code": "147", "desc": "green curry paste", "price": 17.0, "unit": "Kilogram"}, {"code": "148", "desc": "red curry paste", "price": 17.0, "unit": "Kilogram"}, {"code": "149", "desc": "spicy curry paste", "price": 17.0, "unit": "Kilogram"}, {"code": "152", "desc": "Man a fish cake", "price": 15.0, "unit": "Pack"}, {"code": "154", "desc": "Salted fish", "price": 30.0, "unit": "Kilogram"}, {"code": "248", "desc": "BBQ chicken", "price": 30.0, "unit": "Kilogram"}, {"code": "249", "desc": "Papaer roll 80*40", "price": 10.0, "unit": "Pack"}, {"code": "250", "desc": "Memo Pad 70 gsm", "price": 1.2, "unit": "Unit"}, {"code": "251", "desc": "Acohol tomyama", "price": 120.0, "unit": ""}], "invoices": [{"id": "inv_sp_1", "invoiceNo": "IV-00001", "shopId": "sp-sports-academy", "date": "2026-05-15", "terms": "14 days", "items": [{"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 2.0, "unit": "Kilogram", "price": 10}, {"code": "002", "desc": "Baked Shrimp Vermicelli Sauce ซอสกุ้งอบวุ้นเส้น", "qty": 1.0, "unit": "Kilogram", "price": 6}, {"code": "003", "desc": "Clear Tom Yum Soup Sauce ต้มยำน้ำใส", "qty": 2.0, "unit": "Kilogram", "price": 12}, {"code": "004", "desc": "Fermented Fish Papaya Salad Sauce ซอสส้มตำปลาร้า", "qty": 2.0, "unit": "Kilogram", "price": 24}, {"code": "005", "desc": "Fish with Herbs Sauce ซอสปลาทอดสมุนไพร", "qty": 2.0, "unit": "Kilogram", "price": 20}, {"code": "009", "desc": "Pad Thai Sauce ซอสผัดไทย", "qty": 3.0, "unit": "Kilogram", "price": 10}, {"code": "010", "desc": "Panang Curry Sauce ซอสพะแนง", "qty": 2.0, "unit": "Kilogram", "price": 15}, {"code": "012", "desc": "Papaya Salad Sauce ซอสส้มตำไทย", "qty": 2.0, "unit": "Kilogram", "price": 15}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 2.0, "unit": "Kilogram", "price": 15}, {"code": "014", "desc": "Shrimp Donut ทอดมันกุ้ง", "qty": 2.0, "unit": "Kilogram", "price": 31}, {"code": "015", "desc": "Shrimp Paste Rice Sauce ซอสข้าวคลุกกะปิ", "qty": 1.0, "unit": "Kilogram", "price": 12}, {"code": "017", "desc": "Spicy Thai Salad Sauce ซอสยำ", "qty": 2.0, "unit": "Kilogram", "price": 12}, {"code": "018", "desc": "Salted egg sauce ซอสไข่เค็ม", "qty": 1.0, "unit": "Kilogram", "price": 65}, {"code": "007", "desc": "Green Curry Sauce ซอสแกงเขียวหวาน", "qty": 2.0, "unit": "Kilogram", "price": 15}, {"code": "006", "desc": "Fried Rice Seasoning Powder ผงผัดข้าว", "qty": 1.0, "unit": "Kilogram", "price": 16}], "status": "unpaid"}, {"id": "inv_sp_2", "invoiceNo": "IV-00002", "shopId": "sp-sports-academy", "date": "2026-05-16", "terms": "14 days", "items": [{"code": "021", "desc": "Aroi-D Coconut Milk 1000ml", "qty": 5.0, "unit": "Bottle", "price": 13}, {"code": "050", "desc": "Big Dried Shrimp 500gm (กุ้งแก้ว)", "qty": 1.0, "unit": "Kilogram", "price": 120}, {"code": "025", "desc": "Boat Noodle", "qty": 30.0, "unit": "Pack", "price": 5}, {"code": "033", "desc": "Chicken Floss 500.g", "qty": 1.0, "unit": "Pack", "price": 25}, {"code": "034", "desc": "Chicken Seasoning Powder", "qty": 2.0, "unit": "Pack", "price": 16}, {"code": "035", "desc": "Chili Flakes 500 g", "qty": 1.0, "unit": "Pack", "price": 13.5}, {"code": "036", "desc": "Chili oil (น้ำมันพริกเผา)", "qty": 2.0, "unit": "Bottle", "price": 12.5}, {"code": "037", "desc": "Chili  Paste 1 kg (พริกเผาฉั่วฮะเส็ง)", "qty": 1.0, "unit": "Pack", "price": 14.17}, {"code": "038", "desc": "Chili sauce (ซอสพริก)", "qty": 2.0, "unit": "Gallon", "price": 50}, {"code": "039", "desc": "Chinese Cooking Wine", "qty": 1.0, "unit": "Bottle", "price": 23}, {"code": "040", "desc": "Chinese Five spice powder (ผงพะโล้ตราสวนไทย) 500 g", "qty": 1.0, "unit": "Bottle", "price": 26}, {"code": "041", "desc": "Classic ground chili & sugar 5gm x 50", "qty": 1.0, "unit": "Pack", "price": 10}, {"code": "043", "desc": "Coconut Milk Scented Candle( กะทิรมควันอร่อยดี)", "qty": 6.0, "unit": "Box", "price": 13.625}, {"code": "045", "desc": "Crispy ikan bilis (ปลากรอบ)", "qty": 1.0, "unit": "Kilogram", "price": 28}, {"code": "046", "desc": "Curry Powder", "qty": 2.0, "unit": "Pack", "price": 27.5}, {"code": "049", "desc": "Dried Chili", "qty": 0.5, "unit": "Kilogram", "price": 35}, {"code": "053", "desc": "FF instant noodle (เส้นมาม่า ff)", "qty": 2.0, "unit": "Pack", "price": 12}, {"code": "054", "desc": "Fish sauce 4500ml (น้ำปลาทิพรส)", "qty": 1.0, "unit": "Gallon", "price": 33}, {"code": "058", "desc": "Glass Noodles", "qty": 2.0, "unit": "Pack", "price": 12.5}, {"code": "060", "desc": "Hale blue boy Red (เฮลบลูบอย)", "qty": 2.0, "unit": "Bottle", "price": 11.5}, {"code": "068", "desc": "Lime powder (ผงมะนาว)", "qty": 3.0, "unit": "Pack", "price": 13.5}, {"code": "069", "desc": "Longan", "qty": 2.0, "unit": "Kilogram", "price": 35.5}, {"code": "075", "desc": "Palm Sugar", "qty": 2.0, "unit": "Pack", "price": 3.25}, {"code": "081", "desc": "Rai Thip Sticky Rice", "qty": 5.0, "unit": "Kilogram", "price": 8.5}, {"code": "097", "desc": "Premium Quality Tapioca Starch1kg (แป้งมัน)", "qty": 3.0, "unit": "Kilogram", "price": 9}, {"code": "095", "desc": "sweet &sour plum sauce 5.7kg (น้ำจิ้มบ๊วย)", "qty": 1.0, "unit": "Bottle", "price": 35}, {"code": "200", "desc": "Tamarid Sauce ซอสมะขาม", "qty": 1.0, "unit": "Kilogram", "price": 12}], "status": "unpaid"}, {"id": "inv_sp_3", "invoiceNo": "IV-00003", "shopId": "sp-sports-academy", "date": "2026-05-17", "terms": "14 days", "items": [{"code": "098", "desc": "Tempura flour kruawanthip (แป้งทอดกรอบ)", "qty": 5.0, "unit": "Pack", "price": 8}, {"code": "059", "desc": "Thai white pepper70gmx6 (พริกไทยป่นตราปืน)", "qty": 3.0, "unit": "Bottle", "price": 4}, {"code": "100", "desc": "Thin soy sauce 4500ml (ซีอิ้วขาว)", "qty": 1.0, "unit": "Gallon", "price": 39.015}, {"code": "101", "desc": "Tomato Ketchup 5.5kg (ซอสมะเขือเทศ)", "qty": 1.0, "unit": "Gallon", "price": 38}, {"code": "103", "desc": "White sugar (น้ำตาลทราย)", "qty": 5.0, "unit": "Pack", "price": 3.33}, {"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 5.0, "unit": "Kilogram", "price": 10}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 5.0, "unit": "Kilogram", "price": 15}], "status": "unpaid"}, {"id": "inv_sp_4", "invoiceNo": "IV-00004", "shopId": "sp-sports-academy", "date": "2026-05-19", "terms": "14 days", "items": [{"code": "082", "desc": "Rock Sugar", "qty": 3.0, "unit": "Pack", "price": 7}, {"code": "021", "desc": "Aroi-D Coconut Milk 1000ml", "qty": 5.0, "unit": "Bottle", "price": 13}, {"code": "103", "desc": "White sugar (น้ำตาลทราย)", "qty": 5.0, "unit": "Pack", "price": 3.33}, {"code": "200", "desc": "Tamarid Sauce ซอสมะขาม", "qty": 2.0, "unit": "Kilogram", "price": 12}, {"code": "086", "desc": "Singha Beer", "qty": 1.0, "unit": "CTN", "price": 155}, {"code": "027", "desc": "Brown Sugar", "qty": 3.0, "unit": "Kilogram", "price": 6.17}, {"code": "064", "desc": "Kara Coconut Milk 100ml", "qty": 8.0, "unit": "Bottle", "price": 2.44}, {"code": "075", "desc": "Palm Sugar", "qty": 2.0, "unit": "Pack", "price": 3.25}, {"code": "085", "desc": "Shrimp Paste", "qty": 2.0, "unit": "Bottle", "price": 20}, {"code": "178", "desc": "Singlet bag  JC28", "qty": 1.0, "unit": "Unit", "price": 2.7}, {"code": "186", "desc": "HM plastic bag 10*15", "qty": 1.0, "unit": "Pack", "price": 5.8}, {"code": "187", "desc": "HM plastic bag 6*9", "qty": 1.0, "unit": "Pack", "price": 5.8}, {"code": "137", "desc": "Pandan leaf", "qty": 3.0, "unit": "Kilogram", "price": 8}, {"code": "029", "desc": "Chang Beer", "qty": 1.0, "unit": "CTN", "price": 155}], "status": "unpaid"}, {"id": "inv_sp_6", "invoiceNo": "IV-00005", "shopId": "sp-sports-academy", "date": "2026-05-21", "terms": "14 days", "items": [{"code": "002", "desc": "Baked Shrimp Vermicelli Sauce ซอสกุ้งอบวุ้นเส้น", "qty": 5.0, "unit": "Kilogram", "price": 6}, {"code": "003", "desc": "Clear Tom Yum Soup Sauce ต้มยำน้ำใส", "qty": 2.0, "unit": "Kilogram", "price": 12}, {"code": "005", "desc": "Fish with Herbs Sauce ซอสปลาทอดสมุนไพร", "qty": 1.0, "unit": "Kilogram", "price": 20}, {"code": "009", "desc": "Pad Thai Sauce ซอสผัดไทย", "qty": 2.0, "unit": "Kilogram", "price": 10}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 2.0, "unit": "Kilogram", "price": 15}, {"code": "014", "desc": "Shrimp Donut ทอดมันกุ้ง", "qty": 2.0, "unit": "Kilogram", "price": 31}, {"code": "016", "desc": "Sour Curry Sauce ซอสแกงส้ม", "qty": 3.0, "unit": "Kilogram", "price": 6}, {"code": "137", "desc": "Pandan leaf", "qty": 2.0, "unit": "Kilogram", "price": 8}, {"code": "206", "desc": "Base Thai coffee D6", "qty": 3.0, "unit": "Set", "price": 7}, {"code": "208", "desc": "Base Thai green tea D2", "qty": 4.0, "unit": "Set", "price": 3.5}, {"code": "207", "desc": "Base Thai milk tea D1", "qty": 5.0, "unit": "Set", "price": 7}, {"code": "209", "desc": "Thai black tea D09", "qty": 20.0, "unit": "Set", "price": 7}, {"code": "205", "desc": "Thai coffee D4", "qty": 5.0, "unit": "Set", "price": 12}, {"code": "204", "desc": "Thai green tea D2", "qty": 18.0, "unit": "Set", "price": 8}, {"code": "203", "desc": "Thai milk tea D1", "qty": 32.0, "unit": "Set", "price": 13}], "status": "unpaid"}, {"id": "inv_sp_7", "invoiceNo": "IV-00006", "shopId": "sp-sports-academy", "date": "2026-05-23", "terms": "14 days", "items": [{"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 3.0, "unit": "Kilogram", "price": 10}, {"code": "003", "desc": "Clear Tom Yum Soup Sauce ต้มยำน้ำใส", "qty": 1.0, "unit": "Kilogram", "price": 12}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 4.0, "unit": "Kilogram", "price": 15}, {"code": "201", "desc": "MARIGOLD Evaporated Creamer นมข้นจืด", "qty": 10.0, "unit": "Can", "price": 3.125}, {"code": "202", "desc": "Marigold sweetened condensed milk นมข้นหวาน", "qty": 5.0, "unit": "Can", "price": 3.125}], "status": "unpaid"}, {"id": "inv_sp_8", "invoiceNo": "IV-00007", "shopId": "sp-sports-academy", "date": "2026-05-28", "terms": "14 days", "items": [{"code": "022", "desc": "Aroi-D Coconut Milk 250ml", "qty": 6.0, "unit": "Bottle", "price": 4.388888889}, {"code": "036", "desc": "Chili oil (น้ำมันพริกเผา)", "qty": 2.0, "unit": "Bottle", "price": 12.5}, {"code": "054", "desc": "Fish sauce 4500ml (น้ำปลาทิพรส)", "qty": 1.0, "unit": "Gallon", "price": 33}, {"code": "082", "desc": "Rock Sugar", "qty": 2.0, "unit": "Pack", "price": 7}, {"code": "060", "desc": "Hale blue boy Red (เฮลบลูบอย)", "qty": 2.0, "unit": "Bottle", "price": 11.5}, {"code": "026", "desc": "Bread Crumbs kruawanthip 1kg", "qty": 1.0, "unit": "Pack", "price": 16}, {"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 5.0, "unit": "Kilogram", "price": 10}, {"code": "005", "desc": "Fish with Herbs Sauce ซอสปลาทอดสมุนไพร", "qty": 2.0, "unit": "Kilogram", "price": 20}, {"code": "007", "desc": "Green Curry Sauce ซอสแกงเขียวหวาน", "qty": 2.0, "unit": "Kilogram", "price": 15}, {"code": "009", "desc": "Pad Thai Sauce ซอสผัดไทย", "qty": 3.0, "unit": "Kilogram", "price": 10}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 5.0, "unit": "Kilogram", "price": 15}, {"code": "014", "desc": "Shrimp Donut ทอดมันกุ้ง", "qty": 1.0, "unit": "Kilogram", "price": 31}, {"code": "016", "desc": "Sour Curry Sauce ซอสแกงส้ม", "qty": 4.0, "unit": "Kilogram", "price": 6}], "status": "unpaid"}, {"id": "inv_sp_9", "invoiceNo": "IV-00008", "shopId": "sp-sports-academy", "date": "2026-05-31", "terms": "14 days", "items": [{"code": "211", "desc": "Kapro", "qty": 1.0, "unit": "Kilogram", "price": 12}, {"code": "050", "desc": "Big Dried Shrimp 500gm (กุ้งแก้ว)", "qty": 1.0, "unit": "Kilogram", "price": 120}, {"code": "088", "desc": "Singha Soda", "qty": 24.0, "unit": "Bottle", "price": 2}], "status": "unpaid"}, {"id": "inv_sp_10", "invoiceNo": "IV-00009", "shopId": "sp-sports-academy", "date": "2026-06-02", "terms": "14 days", "items": [{"code": "201", "desc": "MARIGOLD Evaporated Creamer นมข้นจืด", "qty": 48.0, "unit": "Can", "price": 3.125}, {"code": "202", "desc": "Marigold sweetened condensed milk นมข้นหวาน", "qty": 10.0, "unit": "Can", "price": 3.125}, {"code": "204", "desc": "Thai green tea D2", "qty": 5.0, "unit": "Set", "price": 8}, {"code": "205", "desc": "Thai coffee D4", "qty": 5.0, "unit": "Set", "price": 12}, {"code": "203", "desc": "Thai milk tea D1", "qty": 5.0, "unit": "Set", "price": 13}, {"code": "097", "desc": "Premium Quality Tapioca Starch1kg (แป้งมัน)", "qty": 3.0, "unit": "Kilogram", "price": 9}, {"code": "036", "desc": "Chili oil (น้ำมันพริกเผา)", "qty": 3.0, "unit": "Bottle", "price": 12.5}, {"code": "035", "desc": "Chili Flakes 500 g", "qty": 1.0, "unit": "Pack", "price": 13.5}, {"code": "034", "desc": "Chicken Seasoning Powder", "qty": 1.0, "unit": "Pack", "price": 16}, {"code": "020", "desc": "Ajinomoto MSG", "qty": 1.0, "unit": "Pack", "price": 14.4}, {"code": "062", "desc": "Iodised Vacuum Salt", "qty": 5.0, "unit": "Pack", "price": 0.75}, {"code": "048", "desc": "Distilled Vinegar", "qty": 1.0, "unit": "Gallon", "price": 18}, {"code": "058", "desc": "Glass Noodles", "qty": 2.0, "unit": "Pack", "price": 12.5}, {"code": "068", "desc": "Lime powder (ผงมะนาว)", "qty": 4.0, "unit": "Pack", "price": 13.5}, {"code": "075", "desc": "Palm Sugar", "qty": 5.0, "unit": "Pack", "price": 3.25}, {"code": "077", "desc": "Peanuts", "qty": 1.0, "unit": "Kilogram", "price": 9}], "status": "unpaid"}, {"id": "inv_sp_11", "invoiceNo": "IV-000010", "shopId": "sp-sports-academy", "date": "2026-06-06", "terms": "14 days", "items": [{"code": "017", "desc": "Spicy Thai Salad Sauce ซอสยำ", "qty": 5.0, "unit": "Kilogram", "price": 12}, {"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 5.0, "unit": "Kilogram", "price": 10}, {"code": "004", "desc": "Fermented Fish Papaya Salad Sauce ซอสส้มตำปลาร้า", "qty": 1.0, "unit": "Kilogram", "price": 24}, {"code": "005", "desc": "Fish with Herbs Sauce ซอสปลาทอดสมุนไพร", "qty": 2.0, "unit": "Kilogram", "price": 20}, {"code": "007", "desc": "Green Curry Sauce ซอสแกงเขียวหวาน", "qty": 1.0, "unit": "Kilogram", "price": 15}, {"code": "009", "desc": "Pad Thai Sauce ซอสผัดไทย", "qty": 4.0, "unit": "Kilogram", "price": 10}, {"code": "012", "desc": "Papaya Salad Sauce ซอสส้มตำไทย", "qty": 2.0, "unit": "Kilogram", "price": 15}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 6.0, "unit": "Kilogram", "price": 15}, {"code": "014", "desc": "Shrimp Donut ทอดมันกุ้ง", "qty": 2.0, "unit": "Kilogram", "price": 31}, {"code": "017", "desc": "Spicy Thai Salad Sauce ซอสยำ", "qty": 2.0, "unit": "Kilogram", "price": 12}, {"code": "200", "desc": "Tamarid Sauce ซอสมะขาม", "qty": 1.0, "unit": "Kilogram", "price": 12}, {"code": "093", "desc": "Sweet Chili sauce (น้ำจิ้มไก่)", "qty": 1.0, "unit": "Gallon", "price": 50}, {"code": "098", "desc": "Tempura flour kruawanthip (แป้งทอดกรอบ)", "qty": 5.0, "unit": "Pack", "price": 8}, {"code": "075", "desc": "Palm Sugar", "qty": 2.0, "unit": "Pack", "price": 3.25}, {"code": "078", "desc": "PKT เเม่เหรียญ", "qty": 3.0, "unit": "Bottle", "price": 6}, {"code": "210", "desc": "Customer rice", "qty": 4.0, "unit": "Pack", "price": 40}], "status": "unpaid"}, {"id": "inv_sp_12", "invoiceNo": "IV-00011", "shopId": "sp-sports-academy", "date": "2026-06-12", "terms": "14 days", "items": [{"code": "060", "desc": "Hale blue boy Red (เฮลบลูบอย)", "qty": 1.0, "unit": "Bottle", "price": 11.5}, {"code": "021", "desc": "Aroi-D Coconut Milk 1000ml", "qty": 5.0, "unit": "Bottle", "price": 13}, {"code": "097", "desc": "Premium Quality Tapioca Starch1kg (แป้งมัน)", "qty": 2.0, "unit": "Kilogram", "price": 9}, {"code": "036", "desc": "Chili oil (น้ำมันพริกเผา)", "qty": 2.0, "unit": "Bottle", "price": 12.5}, {"code": "058", "desc": "Glass Noodles", "qty": 3.0, "unit": "Pack", "price": 12.5}, {"code": "037", "desc": "Chili  Paste 1 kg (พริกเผาฉั่วฮะเส็ง)", "qty": 2.0, "unit": "Pack", "price": 14.17}, {"code": "034", "desc": "Chicken Seasoning Powder", "qty": 1.0, "unit": "Pack", "price": 16}], "status": "unpaid"}, {"id": "inv_sp_13", "invoiceNo": "IV-00012", "shopId": "sp-sports-academy", "date": "2026-06-16", "terms": "14 days", "items": [{"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 5.0, "unit": "Kilogram", "price": 10}, {"code": "003", "desc": "Clear Tom Yum Soup Sauce ต้มยำน้ำใส", "qty": 2.0, "unit": "Kilogram", "price": 12}, {"code": "006", "desc": "Fried Rice Seasoning Powder ผงผัดข้าว", "qty": 1.0, "unit": "Kilogram", "price": 16}, {"code": "009", "desc": "Pad Thai Sauce ซอสผัดไทย", "qty": 6.0, "unit": "Kilogram", "price": 10}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 6.0, "unit": "Kilogram", "price": 15}, {"code": "185", "desc": "Wrap 450 18in", "qty": 1.0, "unit": "Roll", "price": 43}, {"code": "202", "desc": "Marigold sweetened condensed milk นมข้นหวาน", "qty": 48.0, "unit": "Can", "price": 3.125}, {"code": "201", "desc": "MARIGOLD Evaporated Creamer นมข้นจืด", "qty": 48.0, "unit": "Can", "price": 3.125}, {"code": "069", "desc": "Longan", "qty": 2.0, "unit": "Kilogram", "price": 35.5}, {"code": "088", "desc": "Singha Soda", "qty": 24.0, "unit": "Bottle", "price": 2}, {"code": "060", "desc": "Hale blue boy Red (เฮลบลูบอย)", "qty": 1.0, "unit": "Bottle", "price": 11.5}, {"code": "203", "desc": "Thai milk tea D1", "qty": 10.0, "unit": "Set", "price": 13}, {"code": "204", "desc": "Thai green tea D2", "qty": 6.0, "unit": "Set", "price": 8}, {"code": "206", "desc": "Base Thai coffee D6", "qty": 3.0, "unit": "Set", "price": 7}], "status": "unpaid"}, {"id": "inv_sp_14", "invoiceNo": "IV-00013", "shopId": "sp-sports-academy", "date": "2026-06-19", "terms": "14 days", "items": [{"code": "057", "desc": "Fried Shallots", "qty": 1.0, "unit": "Kilogram", "price": 24}, {"code": "034", "desc": "Chicken Seasoning Powder", "qty": 1.0, "unit": "Pack", "price": 16}, {"code": "064", "desc": "Kara Coconut Milk 100ml", "qty": 10.0, "unit": "Bottle", "price": 2.44}, {"code": "020", "desc": "Ajinomoto MSG", "qty": 2.0, "unit": "Pack", "price": 14.4}, {"code": "028", "desc": "Cashew Nuts", "qty": 2.0, "unit": "Kilogram", "price": 58}, {"code": "047", "desc": "Dark Soy Sauce", "qty": 1.0, "unit": "Bottle", "price": 31}, {"code": "178", "desc": "Singlet bag  JC28", "qty": 10.0, "unit": "Unit", "price": 2.7}, {"code": "043", "desc": "Coconut Milk Scented Candle( กะทิรมควันอร่อยดี)", "qty": 6.0, "unit": "Box", "price": 13.625}, {"code": "081", "desc": "Rai Thip Sticky Rice", "qty": 3.0, "unit": "Kilogram", "price": 8.5}, {"code": "075", "desc": "Palm Sugar", "qty": 4.0, "unit": "Pack", "price": 3.25}, {"code": "037", "desc": "Chili  Paste 1 kg (พริกเผาฉั่วฮะเส็ง)", "qty": 1.0, "unit": "Pack", "price": 14.17}, {"code": "078", "desc": "PKT เเม่เหรียญ", "qty": 6.0, "unit": "Bottle", "price": 6}, {"code": "097", "desc": "Premium Quality Tapioca Starch1kg (แป้งมัน)", "qty": 1.0, "unit": "Kilogram", "price": 9}], "status": "unpaid"}, {"id": "inv_sp_15", "invoiceNo": "IV-000014", "shopId": "sp-sports-academy", "date": "2026-06-23", "terms": "14 days", "items": [{"code": "058", "desc": "Glass Noodles", "qty": 4.0, "unit": "Pack", "price": 12.5}, {"code": "050", "desc": "Big Dried Shrimp 500gm (กุ้งแก้ว)", "qty": 1.0, "unit": "Kilogram", "price": 120}, {"code": "210", "desc": "Customer rice", "qty": 3.0, "unit": "Pack", "price": 40}], "status": "unpaid"}, {"id": "inv_sp_16", "invoiceNo": "IV-000015", "shopId": "sp-sports-academy", "date": "2026-06-25", "terms": "14 days", "items": [{"code": "108", "desc": "Take way cup", "qty": 200.0, "unit": "Cup", "price": 0.32}, {"code": "176", "desc": "Straw", "qty": 5.0, "unit": "Unit", "price": 2.4}, {"code": "002", "desc": "Baked Shrimp Vermicelli Sauce ซอสกุ้งอบวุ้นเส้น", "qty": 2.0, "unit": "Kilogram", "price": 6}, {"code": "004", "desc": "Fermented Fish Papaya Salad Sauce ซอสส้มตำปลาร้า", "qty": 2.0, "unit": "Kilogram", "price": 24}, {"code": "006", "desc": "Fried Rice Seasoning Powder ผงผัดข้าว", "qty": 2.0, "unit": "Kilogram", "price": 16}, {"code": "007", "desc": "Green Curry Sauce ซอสแกงเขียวหวาน", "qty": 3.0, "unit": "Kilogram", "price": 15}, {"code": "010", "desc": "Panang Curry Sauce ซอสพะแนง", "qty": 3.0, "unit": "Kilogram", "price": 15}, {"code": "012", "desc": "Papaya Salad Sauce ซอสส้มตำไทย", "qty": 3.0, "unit": "Kilogram", "price": 15}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 3.0, "unit": "Kilogram", "price": 15}, {"code": "015", "desc": "Shrimp Paste Rice Sauce ซอสข้าวคลุกกะปิ", "qty": 2.0, "unit": "Kilogram", "price": 12}, {"code": "016", "desc": "Sour Curry Sauce ซอสแกงส้ม", "qty": 3.0, "unit": "Kilogram", "price": 6}, {"code": "017", "desc": "Spicy Thai Salad Sauce ซอสยำ", "qty": 3.0, "unit": "Kilogram", "price": 12}], "status": "unpaid"}, {"id": "inv_sp_17", "invoiceNo": "IV-000016", "shopId": "sp-sports-academy", "date": "2026-06-30", "terms": "14 days", "items": [{"code": "103", "desc": "White sugar (น้ำตาลทราย)", "qty": 5.0, "unit": "Pack", "price": 3.33}, {"code": "060", "desc": "Hale blue boy Red (เฮลบลูบอย)", "qty": 2.0, "unit": "Bottle", "price": 11.5}, {"code": "215", "desc": "Egg", "qty": 3.0, "unit": "Trays", "price": 13.5}, {"code": "058", "desc": "Glass Noodles", "qty": 2.0, "unit": "Pack", "price": 12.5}, {"code": "035", "desc": "Chili Flakes 500 g", "qty": 1.0, "unit": "Pack", "price": 13.5}, {"code": "055", "desc": "Fish sauce 700ml", "qty": 2.0, "unit": "Bottle", "price": 5.5}, {"code": "098", "desc": "Tempura flour kruawanthip (แป้งทอดกรอบ)", "qty": 3.0, "unit": "Pack", "price": 8}, {"code": "020", "desc": "Ajinomoto MSG", "qty": 1.0, "unit": "Pack", "price": 14.4}, {"code": "068", "desc": "Lime powder (ผงมะนาว)", "qty": 2.0, "unit": "Pack", "price": 13.5}], "status": "unpaid"}, {"id": "inv_sp_18", "invoiceNo": "IV-000017", "shopId": "sp-sports-academy", "date": "2026-07-02", "terms": "14 days", "items": [{"code": "216", "desc": "Chicken Chop 9PCS (2KG)", "qty": 2.0, "unit": "pack", "price": 31.2}, {"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 5.0, "unit": "Kilogram", "price": 10}], "status": "unpaid"}, {"id": "inv_sp_19", "invoiceNo": "IV-000018", "shopId": "sp-sports-academy", "date": "2026-07-07", "terms": "14 days", "items": [{"code": "210", "desc": "Customer rice", "qty": 2.0, "unit": "Pack", "price": 40}, {"code": "098", "desc": "Tempura flour kruawanthip (แป้งทอดกรอบ)", "qty": 3.0, "unit": "Pack", "price": 8}, {"code": "036", "desc": "Chili oil (น้ำมันพริกเผา)", "qty": 3.0, "unit": "Bottle", "price": 12.5}, {"code": "039", "desc": "Chinese Cooking Wine", "qty": 1.0, "unit": "Bottle", "price": 23}, {"code": "020", "desc": "Ajinomoto MSG", "qty": 1.0, "unit": "Pack", "price": 14.4}, {"code": "186", "desc": "HM plastic bag 10*15", "qty": 2.0, "unit": "Pack", "price": 5.8}, {"code": "187", "desc": "HM plastic bag 6*9", "qty": 2.0, "unit": "Pack", "price": 5.8}, {"code": "188", "desc": "HM plastic bag 5*8", "qty": 2.0, "unit": "Pack", "price": 5.8}], "status": "unpaid"}, {"id": "inv_sp_20", "invoiceNo": "IV-000019", "shopId": "sp-sports-academy", "date": "2026-07-09", "terms": "14 days", "items": [{"code": "054", "desc": "Fish sauce 4500ml (น้ำปลาทิพรส)", "qty": 2.0, "unit": "Gallon", "price": 33}, {"code": "045", "desc": "Crispy ikan bilis (ปลากรอบ)", "qty": 0.5, "unit": "Kilogram", "price": 28}], "status": "unpaid"}, {"id": "inv_sp_21", "invoiceNo": "IV-00020", "shopId": "sp-sports-academy", "date": "2026-07-12", "terms": "14 days", "items": [{"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 4.0, "unit": "Kilogram", "price": 10}, {"code": "009", "desc": "Pad Thai Sauce ซอสผัดไทย", "qty": 4.0, "unit": "Kilogram", "price": 10}, {"code": "173", "desc": "Plastic cup SC25", "qty": 100.0, "unit": "Piece", "price": 0.07}, {"code": "195", "desc": "Fork", "qty": 3.0, "unit": "Pack", "price": 2.2}, {"code": "198", "desc": "spoon", "qty": 3.0, "unit": "Pack", "price": 2.2}, {"code": "194", "desc": "Chopsticks", "qty": 3.0, "unit": "Pack", "price": 1.8}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 4.0, "unit": "Kilogram", "price": 15}], "status": "unpaid"}, {"id": "inv_sp_22", "invoiceNo": "IV-00021", "shopId": "sp-sports-academy", "date": "2026-07-14", "terms": "14 days", "items": [{"code": "193", "desc": "Round container 1,000", "qty": 2.0, "unit": "Pack", "price": 21}, {"code": "182", "desc": "Single container 750", "qty": 1.0, "unit": "Piece", "price": 0.18}, {"code": "184", "desc": "plastic bag for take away cup", "qty": 2.0, "unit": "Unit", "price": 1.9}, {"code": "176", "desc": "Straw", "qty": 5.0, "unit": "Unit", "price": 2.4}, {"code": "020", "desc": "Ajinomoto MSG", "qty": 3.0, "unit": "Pack", "price": 14.4}, {"code": "058", "desc": "Glass Noodles", "qty": 5.0, "unit": "Pack", "price": 12.5}, {"code": "036", "desc": "Chili oil (น้ำมันพริกเผา)", "qty": 2.0, "unit": "Bottle", "price": 12.5}, {"code": "034", "desc": "Chicken Seasoning Powder", "qty": 2.0, "unit": "Pack", "price": 16}, {"code": "097", "desc": "Premium Quality Tapioca Starch1kg (แป้งมัน)", "qty": 1.0, "unit": "Kilogram", "price": 9}, {"code": "082", "desc": "Rock Sugar", "qty": 3.0, "unit": "Pack", "price": 7}, {"code": "103", "desc": "White sugar (น้ำตาลทราย)", "qty": 2.0, "unit": "Pack", "price": 3.33}, {"code": "043", "desc": "Coconut Milk Scented Candle( กะทิรมควันอร่อยดี)", "qty": 6.0, "unit": "Box", "price": 13.625}, {"code": "101", "desc": "Tomato Ketchup 5.5kg (ซอสมะเขือเทศ)", "qty": 1.0, "unit": "Gallon", "price": 38}, {"code": "093", "desc": "Sweet Chili sauce (น้ำจิ้มไก่)", "qty": 1.0, "unit": "Gallon", "price": 50}, {"code": "218", "desc": "Rice powder", "qty": 1.0, "unit": "Kilogram", "price": 10}], "status": "unpaid"}, {"id": "inv_sp_23", "invoiceNo": "IV-00022", "shopId": "sp-sports-academy", "date": "2026-07-15", "terms": "14 days", "items": [{"code": "210", "desc": "Customer rice", "qty": 5.0, "unit": "Pack", "price": 40}, {"code": "060", "desc": "Hale blue boy Red (เฮลบลูบอย)", "qty": 1.0, "unit": "Bottle", "price": 11.5}, {"code": "216", "desc": "Chicken Chop 9PCS (2KG)", "qty": 2.0, "unit": "pack", "price": 31.2}, {"code": "171", "desc": "Chicken  Breast 2 kg/pack", "qty": 2.0, "unit": "Pack", "price": 19.6}], "status": "unpaid"}, {"id": "inv_sp_24", "invoiceNo": "IV-00023", "shopId": "sp-sports-academy", "date": "2026-07-17", "terms": "14 days", "items": [{"code": "211", "desc": "Kapro", "qty": 0.5, "unit": "Kilogram", "price": 12}, {"code": "117", "desc": "Lemongrass", "qty": 1.0, "unit": "Kilogram", "price": 4.5}, {"code": "141", "desc": "BB chicken ball", "qty": 1.0, "unit": "Kilogram", "price": 20}, {"code": "248", "desc": "BBQ chicken ", "qty": 1.0, "unit": "Kilogram", "price": 30}], "status": "unpaid"}, {"id": "inv_sp_25", "invoiceNo": "IV-00024", "shopId": "sp-sports-academy", "date": "2026-07-21", "terms": "14 days", "items": [{"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 4.0, "unit": "Kilogram", "price": 10}, {"code": "081", "desc": "Rai Thip Sticky Rice", "qty": 5.0, "unit": "Kilogram", "price": 8.5}, {"code": "215", "desc": "Egg", "qty": 5.0, "unit": "Trays", "price": 13.5}, {"code": "025", "desc": "Boat Noodle", "qty": 10.0, "unit": "Pack", "price": 5}, {"code": "064", "desc": "Kara Coconut Milk 100ml", "qty": 10.0, "unit": "Bottle", "price": 2.44}, {"code": "034", "desc": "Chicken Seasoning Powder", "qty": 2.0, "unit": "Pack", "price": 16}, {"code": "020", "desc": "Ajinomoto MSG", "qty": 2.0, "unit": "Pack", "price": 14.4}, {"code": "068", "desc": "Lime powder (ผงมะนาว)", "qty": 5.0, "unit": "Pack", "price": 13.5}, {"code": "021", "desc": "Aroi-D Coconut Milk 1000ml", "qty": 1.0, "unit": "Bottle", "price": 13}, {"code": "200", "desc": "Tamarid Sauce ซอสมะขาม", "qty": 1.0, "unit": "Kilogram", "price": 12}, {"code": "249", "desc": "Papaer roll 80*40 ", "qty": 2.0, "unit": "Pack", "price": 10}, {"code": "057", "desc": "Fried Shallots", "qty": 1.0, "unit": "Kilogram", "price": 24}, {"code": "103", "desc": "White sugar (น้ำตาลทราย)", "qty": 3.0, "unit": "Pack", "price": 3.33}, {"code": "225", "desc": "Gula Melaka", "qty": 1.0, "unit": "Pack", "price": 5}], "status": "unpaid"}, {"id": "inv_sp_26", "invoiceNo": "IV-00025", "shopId": "sp-sports-academy", "date": "2026-07-26", "terms": "14 days", "items": [{"code": "014", "desc": "Shrimp Donut ทอดมันกุ้ง", "qty": 1.0, "unit": "Kilogram", "price": 31}, {"code": "005", "desc": "Fish with Herbs Sauce ซอสปลาทอดสมุนไพร", "qty": 2.0, "unit": "Kilogram", "price": 20}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 5.0, "unit": "Kilogram", "price": 15}, {"code": "017", "desc": "Spicy Thai Salad Sauce ซอสยำ", "qty": 2.0, "unit": "Kilogram", "price": 12}, {"code": "021", "desc": "Aroi-D Coconut Milk 1000ml", "qty": 2.0, "unit": "Bottle", "price": 13}, {"code": "216", "desc": "Chicken Chop 9PCS (2KG)", "qty": 2.0, "unit": "pack", "price": 31.2}, {"code": "211", "desc": "Kapro", "qty": 0.5, "unit": "Kilogram", "price": 12}], "status": "unpaid"}, {"id": "inv_sp_27", "invoiceNo": "IV-00026", "shopId": "sp-sports-academy", "date": "2026-07-28", "terms": "14 days", "items": [{"code": "216", "desc": "Chicken Chop 9PCS (2KG)", "qty": 2.0, "unit": "pack", "price": 31.2}, {"code": "041", "desc": "Classic ground chili & sugar 5gm x 50", "qty": 2.0, "unit": "Pack", "price": 10}, {"code": "210", "desc": "Customer rice", "qty": 3.0, "unit": "Pack", "price": 40}, {"code": "213", "desc": "Hot cup", "qty": 100.0, "unit": "Cup", "price": 0.26}, {"code": "187", "desc": "HM plastic bag 6*9", "qty": 2.0, "unit": "Pack", "price": 5.8}, {"code": "190", "desc": "Single container 1500", "qty": 2.0, "unit": "Pack", "price": 35}], "status": "unpaid"}, {"id": "inv_sp_28", "invoiceNo": "IV-00027", "shopId": "sp-sports-academy", "date": "2026-08-04", "terms": "14 days", "items": [{"code": "250", "desc": "Memo Pad 70 gsm ", "qty": 3.0, "unit": "Unit", "price": 1.2}, {"code": "028", "desc": "Cashew Nuts", "qty": 1.0, "unit": "Kilogram", "price": 58}, {"code": "077", "desc": "Peanuts", "qty": 1.0, "unit": "Kilogram", "price": 9}, {"code": "098", "desc": "Tempura flour kruawanthip (แป้งทอดกรอบ)", "qty": 3.0, "unit": "Pack", "price": 8}, {"code": "210", "desc": "Customer rice", "qty": 3.0, "unit": "Pack", "price": 40}, {"code": "093", "desc": "Sweet Chili sauce (น้ำจิ้มไก่)", "qty": 1.0, "unit": "Gallon", "price": 50}, {"code": "060", "desc": "Hale blue boy Red (เฮลบลูบอย)", "qty": 2.0, "unit": "Bottle", "price": 11.5}, {"code": "025", "desc": "Boat Noodle", "qty": 10.0, "unit": "Pack", "price": 5}, {"code": "045", "desc": "Crispy ikan bilis (ปลากรอบ)", "qty": 1.0, "unit": "Kilogram", "price": 28}, {"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 5.0, "unit": "Kilogram", "price": 10}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 5.0, "unit": "Kilogram", "price": 15}, {"code": "017", "desc": "Spicy Thai Salad Sauce ซอสยำ", "qty": 2.0, "unit": "Kilogram", "price": 12}, {"code": "217", "desc": "Chu Chee Curry Sauce ซอสฉู่ฉี่", "qty": 2.0, "unit": "Kilogram", "price": 15}, {"code": "050", "desc": "Big Dried Shrimp 500gm (กุ้งแก้ว)", "qty": 0.5, "unit": "Kilogram", "price": 120}, {"code": "086", "desc": "Singha Beer", "qty": 5.0, "unit": "CTN", "price": 155.0}, {"code": "189", "desc": "HM plastic bag 7*10", "qty": 3.0, "unit": "Pack", "price": 5.8}, {"code": "201", "desc": "MARIGOLD Evaporated Creamer นมข้นจืด", "qty": 48.0, "unit": "Can", "price": 3.125}, {"code": "026", "desc": "Bread Crumbs kruawanthip 1kg", "qty": 1.0, "unit": "Pack", "price": 16}], "status": "unpaid"}, {"id": "inv_sp_29", "invoiceNo": "IV-00028", "shopId": "sp-sports-academy", "date": "2026-08-11", "terms": "14 days", "items": [{"code": "028", "desc": "Cashew Nuts", "qty": 1.0, "unit": "Kilogram", "price": 58}, {"code": "036", "desc": "Chili oil (น้ำมันพริกเผา)", "qty": 3.0, "unit": "Bottle", "price": 12.5}, {"code": "046", "desc": "Curry Powder", "qty": 1.0, "unit": "Pack", "price": 27.5}, {"code": "210", "desc": "Customer rice", "qty": 3.0, "unit": "Pack", "price": 40}, {"code": "053", "desc": "FF instant noodle (เส้นมาม่า ff)", "qty": 2.0, "unit": "Pack", "price": 12}, {"code": "064", "desc": "Kara Coconut Milk 100ml", "qty": 10.0, "unit": "Bottle", "price": 2.44}, {"code": "069", "desc": "Longan", "qty": 1.0, "unit": "Kilogram", "price": 35.5}, {"code": "023", "desc": "Bihoon traditional", "qty": 1.0, "unit": "Pack", "price": 4}, {"code": "103", "desc": "White sugar (น้ำตาลทราย)", "qty": 3.0, "unit": "Pack", "price": 3.33}, {"code": "188", "desc": "HM plastic bag 5*8", "qty": 3.0, "unit": "Pack", "price": 5.8}, {"code": "177", "desc": "Singlet bag 43×45.7cm (Orange  color )", "qty": 3.0, "unit": "Unit", "price": 5.2}, {"code": "193", "desc": "Round container 1,000", "qty": 1.0, "unit": "Pack", "price": 21}], "status": "unpaid"}, {"id": "inv_sp_30", "invoiceNo": "IV-00029", "shopId": "sp-sports-academy", "date": "2026-08-11", "terms": "14 days", "items": [{"code": "007", "desc": "Green Curry Sauce ซอสแกงเขียวหวาน", "qty": 4.0, "unit": "Kilogram", "price": 15}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 5.0, "unit": "Kilogram", "price": 15}, {"code": "014", "desc": "Shrimp Donut ทอดมันกุ้ง", "qty": 1.0, "unit": "Kilogram", "price": 31}, {"code": "017", "desc": "Spicy Thai Salad Sauce ซอสยำ", "qty": 2.0, "unit": "Kilogram", "price": 12}], "status": "unpaid"}, {"id": "inv_yykj_1", "invoiceNo": "IV-00001", "shopId": "yykj-enterprise", "date": "2026-05-08", "terms": "14 days", "status": "unpaid", "items": [{"code": "004", "desc": "Fermented Fish Papaya Salad Sauce ซอสส้มตำปลาร้า", "qty": 1.0, "unit": "Kilogram", "price": 24.0}, {"code": "006", "desc": "Fried Rice Seasoning Powder ผงผัดข้าว", "qty": 0.5, "unit": "Kilogram", "price": 16.0}, {"code": "003", "desc": "Clear Tom Yum Soup Sauce ต้มยำน้ำใส", "qty": 1.0, "unit": "Kilogram", "price": 12.0}, {"code": "007", "desc": "Green Curry Sauce ซอสแกงเขียวหวาน", "qty": 6.0, "unit": "Kilogram", "price": 15.0}, {"code": "017", "desc": "Spicy Thai Salad Sauce ซอสยำ", "qty": 2.0, "unit": "Kilogram", "price": 12.0}, {"code": "008", "desc": "Grilled Pork Neck Sauce ซอสคอหมูย่าง", "qty": 1.0, "unit": "Kilogram", "price": 8.0}]}, {"id": "inv_yykj_2", "invoiceNo": "IV-00002", "shopId": "yykj-enterprise", "date": "2026-05-11", "terms": "14 days", "status": "unpaid", "items": [{"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 3.0, "unit": "Kilogram", "price": 10.0}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 2.0, "unit": "Kilogram", "price": 15.0}]}, {"id": "inv_yykj_3", "invoiceNo": "IV-00003", "shopId": "yykj-enterprise", "date": "2026-05-14", "terms": "14 days", "status": "unpaid", "items": [{"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 5.0, "unit": "Kilogram", "price": 10.0}, {"code": "004", "desc": "Fermented Fish Papaya Salad Sauce ซอสส้มตำปลาร้า", "qty": 2.0, "unit": "Kilogram", "price": 24.0}, {"code": "005", "desc": "Fish with Herbs Sauce ซอสปลาทอดสมุนไพร", "qty": 2.0, "unit": "Kilogram", "price": 20.0}, {"code": "012", "desc": "Papaya Salad Sauce ซอสส้มตำไทย", "qty": 1.0, "unit": "Kilogram", "price": 15.0}, {"code": "018", "desc": "Salted egg sauce ซอสไข่เค็ม", "qty": 1.0, "unit": "Kilogram", "price": 65.0}]}, {"id": "inv_yykj_4", "invoiceNo": "IV-00004", "shopId": "yykj-enterprise", "date": "2026-05-19", "terms": "14 days", "status": "unpaid", "items": [{"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 7.0, "unit": "Kilogram", "price": 10.0}, {"code": "005", "desc": "Fish with Herbs Sauce ซอสปลาทอดสมุนไพร", "qty": 1.0, "unit": "Kilogram", "price": 20.0}, {"code": "009", "desc": "Pad Thai Sauce ซอสผัดไทย", "qty": 1.0, "unit": "Kilogram", "price": 10.0}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 3.0, "unit": "Kilogram", "price": 15.0}, {"code": "016", "desc": "Sour Curry Sauce ซอสแกงส้ม", "qty": 2.0, "unit": "Kilogram", "price": 6.0}, {"code": "017", "desc": "Spicy Thai Salad Sauce ซอสยำ", "qty": 1.0, "unit": "Kilogram", "price": 12.0}]}, {"id": "inv_yykj_5", "invoiceNo": "IV-00005", "shopId": "yykj-enterprise", "date": "2026-05-23", "terms": "14 days", "status": "unpaid", "items": [{"code": "003", "desc": "Clear Tom Yum Soup Sauce ต้มยำน้ำใส", "qty": 1.0, "unit": "Kilogram", "price": 12.0}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 1.0, "unit": "Kilogram", "price": 15.0}, {"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 1.0, "unit": "Kilogram", "price": 10.0}, {"code": "009", "desc": "Pad Thai Sauce ซอสผัดไทย", "qty": 1.0, "unit": "Kilogram", "price": 10.0}]}, {"id": "inv_yykj_6", "invoiceNo": "IV-00006", "shopId": "yykj-enterprise", "date": "2026-05-24", "terms": "14 days", "status": "unpaid", "items": [{"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 1.0, "unit": "Kilogram", "price": 10.0}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 3.0, "unit": "Kilogram", "price": 15.0}, {"code": "015", "desc": "Shrimp Paste Rice Sauce ซอสข้าวคลุกกะปิ", "qty": 1.0, "unit": "Kilogram", "price": 12.0}, {"code": "017", "desc": "Spicy Thai Salad Sauce ซอสยำ", "qty": 1.0, "unit": "Kilogram", "price": 12.0}]}, {"id": "inv_yykj_7", "invoiceNo": "IV-00007", "shopId": "yykj-enterprise", "date": "2026-05-28", "terms": "14 days", "status": "unpaid", "items": [{"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 5.0, "unit": "Kilogram", "price": 10.0}, {"code": "006", "desc": "Fried Rice Seasoning Powder ผงผัดข้าว", "qty": 1.0, "unit": "Kilogram", "price": 16.0}, {"code": "008", "desc": "Grilled Pork Neck Sauce ซอสคอหมูย่าง", "qty": 1.0, "unit": "Kilogram", "price": 8.0}, {"code": "009", "desc": "Pad Thai Sauce ซอสผัดไทย", "qty": 2.0, "unit": "Kilogram", "price": 10.0}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 6.0, "unit": "Kilogram", "price": 15.0}, {"code": "210", "desc": "Customer rice", "qty": 5.0, "unit": "Pack", "price": 40.0}]}, {"id": "inv_yykj_8", "invoiceNo": "IV-00008", "shopId": "yykj-enterprise", "date": "2026-05-31", "terms": "14 days", "status": "unpaid", "items": [{"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 3.0, "unit": "Kilogram", "price": 10.0}, {"code": "003", "desc": "Clear Tom Yum Soup Sauce ต้มยำน้ำใส", "qty": 1.0, "unit": "Kilogram", "price": 12.0}, {"code": "006", "desc": "Fried Rice Seasoning Powder ผงผัดข้าว", "qty": 1.0, "unit": "Kilogram", "price": 16.0}, {"code": "007", "desc": "Green Curry Sauce ซอสแกงเขียวหวาน", "qty": 2.0, "unit": "Kilogram", "price": 15.0}, {"code": "009", "desc": "Pad Thai Sauce ซอสผัดไทย", "qty": 2.0, "unit": "Kilogram", "price": 10.0}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 6.0, "unit": "Kilogram", "price": 15.0}, {"code": "016", "desc": "Sour Curry Sauce ซอสแกงส้ม", "qty": 4.0, "unit": "Kilogram", "price": 6.0}, {"code": "017", "desc": "Spicy Thai Salad Sauce ซอสยำ", "qty": 1.0, "unit": "Kilogram", "price": 12.0}]}, {"id": "inv_yykj_9", "invoiceNo": "IV-00009", "shopId": "yykj-enterprise", "date": "2026-06-05", "terms": "14 days", "status": "unpaid", "items": [{"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 5.0, "unit": "Kilogram", "price": 10.0}, {"code": "005", "desc": "Fish with Herbs Sauce ซอสปลาทอดสมุนไพร", "qty": 2.0, "unit": "Kilogram", "price": 20.0}, {"code": "012", "desc": "Papaya Salad Sauce ซอสส้มตำไทย", "qty": 1.0, "unit": "Kilogram", "price": 15.0}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 6.0, "unit": "Kilogram", "price": 15.0}, {"code": "014", "desc": "Shrimp Donut ทอดมันกุ้ง", "qty": 2.0, "unit": "Kilogram", "price": 31.0}]}, {"id": "inv_yykj_10", "invoiceNo": "IV-00010", "shopId": "yykj-enterprise", "date": "2026-06-09", "terms": "14 days", "status": "unpaid", "items": [{"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 5.0, "unit": "Kilogram", "price": 10.0}, {"code": "002", "desc": "Baked Shrimp Vermicelli Sauce ซอสกุ้งอบวุ้นเส้น", "qty": 2.0, "unit": "Kilogram", "price": 6.0}, {"code": "004", "desc": "Fermented Fish Papaya Salad Sauce ซอสส้มตำปลาร้า", "qty": 1.0, "unit": "Kilogram", "price": 24.0}, {"code": "005", "desc": "Fish with Herbs Sauce ซอสปลาทอดสมุนไพร", "qty": 1.0, "unit": "Kilogram", "price": 20.0}, {"code": "007", "desc": "Green Curry Sauce ซอสแกงเขียวหวาน", "qty": 2.0, "unit": "Kilogram", "price": 15.0}, {"code": "008", "desc": "Grilled Pork Neck Sauce ซอสคอหมูย่าง", "qty": 1.0, "unit": "Kilogram", "price": 8.0}, {"code": "012", "desc": "Papaya Salad Sauce ซอสส้มตำไทย", "qty": 1.0, "unit": "Kilogram", "price": 15.0}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 6.0, "unit": "Kilogram", "price": 15.0}, {"code": "014", "desc": "Shrimp Donut ทอดมันกุ้ง", "qty": 2.0, "unit": "Kilogram", "price": 31.0}, {"code": "018", "desc": "Salted egg sauce ซอสไข่เค็ม", "qty": 1.0, "unit": "Kilogram", "price": 65.0}]}, {"id": "inv_yykj_11", "invoiceNo": "IV-00011", "shopId": "yykj-enterprise", "date": "2026-06-13", "terms": "14 days", "status": "unpaid", "items": [{"code": "210", "desc": "Customer rice", "qty": 10.0, "unit": "Pack", "price": 40.0}]}, {"id": "inv_yykj_12", "invoiceNo": "IV-00012", "shopId": "yykj-enterprise", "date": "2026-06-16", "terms": "14 days", "status": "unpaid", "items": [{"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 10.0, "unit": "Kilogram", "price": 10.0}, {"code": "003", "desc": "Clear Tom Yum Soup Sauce ต้มยำน้ำใส", "qty": 1.0, "unit": "Kilogram", "price": 12.0}, {"code": "006", "desc": "Fried Rice Seasoning Powder ผงผัดข้าว", "qty": 1.0, "unit": "Kilogram", "price": 16.0}, {"code": "009", "desc": "Pad Thai Sauce ซอสผัดไทย", "qty": 5.0, "unit": "Kilogram", "price": 10.0}, {"code": "012", "desc": "Papaya Salad Sauce ซอสส้มตำไทย", "qty": 1.0, "unit": "Kilogram", "price": 15.0}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 6.0, "unit": "Kilogram", "price": 15.0}, {"code": "016", "desc": "Sour Curry Sauce ซอสแกงส้ม", "qty": 2.0, "unit": "Kilogram", "price": 6.0}, {"code": "200", "desc": "Tamarid Sauce ซอสมะขาม", "qty": 1.0, "unit": "Kilogram", "price": 12.0}]}, {"id": "inv_yykj_13", "invoiceNo": "IV-00013", "shopId": "yykj-enterprise", "date": "2026-06-18", "terms": "14 days", "status": "unpaid", "items": [{"code": "003", "desc": "Clear Tom Yum Soup Sauce ต้มยำน้ำใส", "qty": 1.0, "unit": "Kilogram", "price": 12.0}, {"code": "005", "desc": "Fish with Herbs Sauce ซอสปลาทอดสมุนไพร", "qty": 1.0, "unit": "Kilogram", "price": 20.0}, {"code": "007", "desc": "Green Curry Sauce ซอสแกงเขียวหวาน", "qty": 2.0, "unit": "Kilogram", "price": 15.0}, {"code": "014", "desc": "Shrimp Donut ทอดมันกุ้ง", "qty": 2.0, "unit": "Kilogram", "price": 31.0}, {"code": "016", "desc": "Sour Curry Sauce ซอสแกงส้ม", "qty": 3.0, "unit": "Kilogram", "price": 6.0}, {"code": "017", "desc": "Spicy Thai Salad Sauce ซอสยำ", "qty": 1.0, "unit": "Kilogram", "price": 12.0}, {"code": "093", "desc": "Sweet Chili sauce (น้ำจิ้มไก่)", "qty": 1.0, "unit": "Gallon", "price": 50.0}]}, {"id": "inv_yykj_14", "invoiceNo": "IV-00014", "shopId": "yykj-enterprise", "date": "2026-06-25", "terms": "14 days", "status": "unpaid", "items": [{"code": "213", "desc": "Hot cup", "qty": 200.0, "unit": "Cup", "price": 0.26}]}, {"id": "inv_yykj_15", "invoiceNo": "IV-00015", "shopId": "yykj-enterprise", "date": "2026-06-26", "terms": "14 days", "status": "unpaid", "items": [{"code": "214", "desc": "Tissue toilet cowboy", "qty": 4.0, "unit": "Unit", "price": 4.0}, {"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 7.0, "unit": "Kilogram", "price": 10.0}, {"code": "007", "desc": "Green Curry Sauce ซอสแกงเขียวหวาน", "qty": 2.0, "unit": "Kilogram", "price": 15.0}, {"code": "009", "desc": "Pad Thai Sauce ซอสผัดไทย", "qty": 3.0, "unit": "Kilogram", "price": 10.0}, {"code": "012", "desc": "Papaya Salad Sauce ซอสส้มตำไทย", "qty": 1.0, "unit": "Kilogram", "price": 15.0}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 10.0, "unit": "Kilogram", "price": 15.0}, {"code": "014", "desc": "Shrimp Donut ทอดมันกุ้ง", "qty": 2.0, "unit": "Kilogram", "price": 31.0}, {"code": "015", "desc": "Shrimp Paste Rice Sauce ซอสข้าวคลุกกะปิ", "qty": 1.0, "unit": "Kilogram", "price": 12.0}, {"code": "017", "desc": "Spicy Thai Salad Sauce ซอสยำ", "qty": 1.0, "unit": "Kilogram", "price": 12.0}]}, {"id": "inv_yykj_16", "invoiceNo": "IV-00016", "shopId": "yykj-enterprise", "date": "2026-07-04", "terms": "14 days", "status": "unpaid", "items": [{"code": "210", "desc": "Customer rice", "qty": 10.0, "unit": "Pack", "price": 40.0}]}, {"id": "inv_yykj_17", "invoiceNo": "IV-00017", "shopId": "yykj-enterprise", "date": "2026-07-07", "terms": "14 days", "status": "unpaid", "items": [{"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 7.0, "unit": "Kilogram", "price": 10.0}, {"code": "002", "desc": "Baked Shrimp Vermicelli Sauce ซอสกุ้งอบวุ้นเส้น", "qty": 2.0, "unit": "Kilogram", "price": 6.0}, {"code": "003", "desc": "Clear Tom Yum Soup Sauce ต้มยำน้ำใส", "qty": 2.0, "unit": "Kilogram", "price": 12.0}, {"code": "005", "desc": "Fish with Herbs Sauce ซอสปลาทอดสมุนไพร", "qty": 2.0, "unit": "Kilogram", "price": 20.0}, {"code": "006", "desc": "Fried Rice Seasoning Powder ผงผัดข้าว", "qty": 1.0, "unit": "Kilogram", "price": 16.0}, {"code": "007", "desc": "Green Curry Sauce ซอสแกงเขียวหวาน", "qty": 5.0, "unit": "Kilogram", "price": 15.0}, {"code": "008", "desc": "Grilled Pork Neck Sauce ซอสคอหมูย่าง", "qty": 1.0, "unit": "Kilogram", "price": 8.0}, {"code": "012", "desc": "Papaya Salad Sauce ซอสส้มตำไทย", "qty": 2.0, "unit": "Kilogram", "price": 15.0}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 10.0, "unit": "Kilogram", "price": 15.0}, {"code": "014", "desc": "Shrimp Donut ทอดมันกุ้ง", "qty": 2.0, "unit": "Kilogram", "price": 31.0}, {"code": "016", "desc": "Sour Curry Sauce ซอสแกงส้ม", "qty": 5.0, "unit": "Kilogram", "price": 6.0}, {"code": "017", "desc": "Spicy Thai Salad Sauce ซอสยำ", "qty": 1.0, "unit": "Kilogram", "price": 12.0}, {"code": "018", "desc": "Salted egg sauce ซอสไข่เค็ม", "qty": 1.0, "unit": "Kilogram", "price": 65.0}, {"code": "093", "desc": "Sweet Chili sauce (น้ำจิ้มไก่)", "qty": 2.0, "unit": "Gallon", "price": 50.0}, {"code": "201", "desc": "MARIGOLD Evaporated Creamer นมข้นจืด", "qty": 48.0, "unit": "Can", "price": 3.13}]}, {"id": "inv_yykj_18", "invoiceNo": "IV-00018", "shopId": "yykj-enterprise", "date": "2026-07-12", "terms": "14 days", "status": "unpaid", "items": [{"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 10.0, "unit": "Kilogram", "price": 10.0}, {"code": "002", "desc": "Baked Shrimp Vermicelli Sauce ซอสกุ้งอบวุ้นเส้น", "qty": 3.0, "unit": "Kilogram", "price": 6.0}, {"code": "003", "desc": "Clear Tom Yum Soup Sauce ต้มยำน้ำใส", "qty": 2.0, "unit": "Kilogram", "price": 12.0}, {"code": "005", "desc": "Fish with Herbs Sauce ซอสปลาทอดสมุนไพร", "qty": 2.0, "unit": "Kilogram", "price": 20.0}, {"code": "006", "desc": "Fried Rice Seasoning Powder ผงผัดข้าว", "qty": 1.0, "unit": "Kilogram", "price": 16.0}, {"code": "010", "desc": "Panang Curry Sauce ซอสพะแนง", "qty": 3.0, "unit": "Kilogram", "price": 15.0}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 10.0, "unit": "Kilogram", "price": 15.0}, {"code": "014", "desc": "Shrimp Donut ทอดมันกุ้ง", "qty": 2.0, "unit": "Kilogram", "price": 31.0}, {"code": "017", "desc": "Spicy Thai Salad Sauce ซอสยำ", "qty": 2.0, "unit": "Kilogram", "price": 12.0}, {"code": "217", "desc": "Chu Chee Curry Sauce ซอสฉู่ฉี่", "qty": 1.0, "unit": "Kilogram", "price": 15.0}]}, {"id": "inv_yykj_19", "invoiceNo": "IV-00019", "shopId": "yykj-enterprise", "date": "2026-07-22", "terms": "14 days", "status": "unpaid", "items": [{"code": "201", "desc": "MARIGOLD Evaporated Creamer นมข้นจืด", "qty": 48.0, "unit": "Can", "price": 3.13}, {"code": "202", "desc": "Marigold sweetened condensed milk นมข้นหวาน", "qty": 48.0, "unit": "Can", "price": 3.13}, {"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 10.0, "unit": "Kilogram", "price": 10.0}, {"code": "005", "desc": "Fish with Herbs Sauce ซอสปลาทอดสมุนไพร", "qty": 2.0, "unit": "Kilogram", "price": 20.0}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 13.0, "unit": "Kilogram", "price": 15.0}, {"code": "016", "desc": "Sour Curry Sauce ซอสแกงส้ม", "qty": 3.0, "unit": "Kilogram", "price": 6.0}, {"code": "017", "desc": "Spicy Thai Salad Sauce ซอสยำ", "qty": 1.0, "unit": "Kilogram", "price": 12.0}]}, {"id": "inv_yykj_20", "invoiceNo": "IV-00020", "shopId": "yykj-enterprise", "date": "2026-07-24", "terms": "14 days", "status": "unpaid", "items": [{"code": "210", "desc": "Customer rice", "qty": 10.0, "unit": "Pack", "price": 40.0}]}, {"id": "inv_yykj_21", "invoiceNo": "IV-00021", "shopId": "yykj-enterprise", "date": "2026-08-02", "terms": "14 days", "status": "unpaid", "items": [{"code": "214", "desc": "Tissue toilet cowboy", "qty": 6.0, "unit": "Unit", "price": 4.0}, {"code": "036", "desc": "Chili oil (น้ำมันพริกเผา)", "qty": 6.0, "unit": "Bottle", "price": 12.5}, {"code": "037", "desc": "Chili  Paste 1 kg (พริกเผาฉั่วฮะเส็ง)", "qty": 12.0, "unit": "Pack", "price": 14.17}, {"code": "031", "desc": "Cha Tra Mue Red Tea", "qty": 12.0, "unit": "Pack", "price": 11.25}, {"code": "072", "desc": "Mongkornbin Thai Red Tea", "qty": 12.0, "unit": "Pack", "price": 10.67}]}, {"id": "inv_yykj_22", "invoiceNo": "IV-00022", "shopId": "yykj-enterprise", "date": "2026-08-06", "terms": "14 days", "status": "unpaid", "items": [{"code": "001", "desc": "All-Purpose Stir-Fry Sauce ซอสผัดอเนกประสงค์", "qty": 10.0, "unit": "Kilogram", "price": 10.0}, {"code": "013", "desc": "Red Tom Yum Soup Sauce ต้มยำน้ำข้น", "qty": 10.0, "unit": "Kilogram", "price": 15.0}, {"code": "217", "desc": "Chu Chee Curry Sauce ซอสฉู่ฉี่", "qty": 1.0, "unit": "Kilogram", "price": 15.0}, {"code": "018", "desc": "Salted egg sauce ซอสไข่เค็ม", "qty": 1.0, "unit": "Kilogram", "price": 65.0}, {"code": "009", "desc": "Pad Thai Sauce ซอสผัดไทย", "qty": 10.0, "unit": "Kilogram", "price": 10.0}, {"code": "015", "desc": "Shrimp Paste Rice Sauce ซอสข้าวคลุกกะปิ", "qty": 1.0, "unit": "Kilogram", "price": 12.0}, {"code": "006", "desc": "Fried Rice Seasoning Powder ผงผัดข้าว", "qty": 1.0, "unit": "Kilogram", "price": 16.0}, {"code": "014", "desc": "Shrimp Donut ทอดมันกุ้ง", "qty": 2.0, "unit": "Kilogram", "price": 31.0}, {"code": "005", "desc": "Fish with Herbs Sauce ซอสปลาทอดสมุนไพร", "qty": 2.0, "unit": "Kilogram", "price": 20.0}, {"code": "012", "desc": "Papaya Salad Sauce ซอสส้มตำไทย", "qty": 2.0, "unit": "Kilogram", "price": 15.0}, {"code": "017", "desc": "Spicy Thai Salad Sauce ซอสยำ", "qty": 2.0, "unit": "Kilogram", "price": 12.0}]}, {"id": "inv_yykj_23", "invoiceNo": "IV-00023", "shopId": "yykj-enterprise", "date": "2026-08-12", "terms": "14 days", "items": [{"code": "210", "desc": "Customer rice", "qty": 10.0, "unit": "Pack", "price": 40}, {"code": "201", "desc": "MARIGOLD Evaporated Creamer นมข้นจืด", "qty": 48.0, "unit": "Can", "price": 3.125}], "status": "unpaid"}, {"id": "inv_yykj_24", "invoiceNo": "IV-00024", "shopId": "yykj-enterprise", "date": "2026-08-14", "terms": "14 days", "status": "unpaid", "items": [{"code": "060", "desc": "Hale blue boy Red (เฮลบลูบอย)", "qty": 2.0, "unit": "Bottle", "price": 11.5}, {"code": "073", "desc": "Oyster Sauce", "qty": 4.0, "unit": "Gallon", "price": 13.0}, {"code": "098", "desc": "Tempura flour kruawanthip (แป้งทอดกรอบ)", "qty": 10.0, "unit": "Pack", "price": 8.0}]}, {"id": "inv_sp_31", "invoiceNo": "IV-00030", "shopId": "sp-sports-academy", "date": "2026-08-14", "terms": "14 days", "status": "unpaid", "items": [{"code": "108", "desc": "Take way cup", "qty": 250.0, "unit": "Cup", "price": 0.32}, {"code": "176", "desc": "Straw", "qty": 5.0, "unit": "Unit", "price": 2.4}, {"code": "103", "desc": "White sugar (น้ำตาลทราย)", "qty": 3.0, "unit": "Pack", "price": 3.35}, {"code": "216", "desc": "Chicken Chop 9PCS (2KG)", "qty": 2.0, "unit": "pack", "price": 31.2}]}]};
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let DB = { company:null, shops:[], products:[], invoices:[] };
+let VIEW = { name:'dashboard', shopId:null, invoiceId:null };
+let DRAFT = null;
+let SAVING = false;
+
+const uid = (p)=> p + '_' + Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4);
+const money = (n)=> 'RM ' + (Number(n)||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtDate = (iso)=>{
+  if(!iso) return '-';
+  const d = new Date(iso+'T00:00:00');
+  if(isNaN(d)) return iso;
+  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+};
+const todayISO = ()=> new Date().toISOString().slice(0,10);
+
+/* ============================================================
+   STORAGE
+   Works two ways automatically, no setup needed:
+   1) Inside a Claude artifact -> uses window.storage (cloud, per
+      Claude account, syncs across devices/sessions).
+   2) Anywhere else (a downloaded .html file opened directly, a
+      shared/public artifact link without write access, hosting
+      it on your own website, etc.) -> falls back to the
+      browser's localStorage automatically. Data then stays only
+      on that one device/browser, but Save actually works.
+   If window.storage exists but throws an error the first time we
+   try to use it (e.g. a public link that can't write), we switch
+   to localStorage for the rest of the session and tell the user.
+   ============================================================ */
+/* ============================================================
+   STORAGE
+   Backend priority:
+   1) Google Sheets via Apps Script Web App (APPS_SCRIPT_URL below)
+      — set this once and it becomes the source of truth. Doesn't
+      depend on Claude's storage at all, so it isn't affected by
+      any Claude-side outages.
+   2) Claude's window.storage — used automatically ONLY if
+      APPS_SCRIPT_URL is left as the placeholder (i.e. you haven't
+      set up the Google Sheet backend yet).
+   3) Browser localStorage — last-resort safety net if whichever
+      backend above is picked becomes unreachable. Local-only,
+      not shared with anyone else.
+   ============================================================ */
+
+// ⬇️ PASTE YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL HERE ⬇️
+// Leave as-is (containing "PASTE_YOUR") to keep using Claude's storage instead.
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8_IeXJnwjd1hZTxpacOa30yxgIK-vk9tCti7DenWT5oeqCCDyHNuPx_yRYxZsFjNLoQ/exec';
+const HAS_REMOTE = typeof APPS_SCRIPT_URL === 'string' && APPS_SCRIPT_URL.startsWith('http') && !APPS_SCRIPT_URL.includes('PASTE_YOUR');
+
+const LOCAL_PREFIX = 'yakyim_invoice_';
+const SHARED = true; // shared:true = everyone who opens this same artifact link sees/edits the same data (Claude-storage mode only)
+let usingLocalFallback = HAS_REMOTE ? false : !(typeof window!=='undefined' && window.storage && typeof window.storage.get==='function');
+let AUTO_SYNC_TIMER = null;
+let STATUS_TICK_TIMER = null;
+let RECONNECT_TIMER = null;
+let lastSyncAt = null;
+let SYNCING = false;
+
+async function loadAll(){
+  try{
+    const [c,s,p] = await Promise.all([
+      safeGet('company'), safeGet('shops'), safeGet('products')
+    ]);
+    if(!s){
+      DB.company = SEED_DATA.company;
+      DB.shops = SEED_DATA.shops;
+      DB.products = SEED_DATA.products;
+      DB.invoices = SEED_DATA.invoices;
+      await persistAll();
+      showToast('Sample data imported from your files ✓');
+    } else {
+      DB.company = c || SEED_DATA.company;
+      DB.shops = s || [];
+      DB.products = p || [];
+      DB.invoices = await loadAllInvoices(DB.shops);
+    }
+  }catch(e){
+    console.error('load error', e);
+    DB.company = SEED_DATA.company; DB.shops = SEED_DATA.shops;
+    DB.products = SEED_DATA.products; DB.invoices = SEED_DATA.invoices;
+  }
+  if(usingLocalFallback){
+    showToast('Saving in this browser only (localStorage) — data won\'t follow you to another device or browser');
+    startReconnectWatcher();
+  } else {
+    lastSyncAt = Date.now();
+    showToast(HAS_REMOTE ? 'Shared mode (Google Sheets) — everyone sees the same data' : 'Shared mode — everyone with this artifact link sees the same data');
+    startAutoSync();
+    startStatusTicker();
+  }
+  render();
+}
+
+/* ---- Invoices are stored ONE KEY PER SHOP ("invoices__<shopId>"),
+   not as one giant blob. Google Sheets caps a single cell at 50,000
+   characters — a growing invoice list would eventually blow past
+   that limit silently. Splitting by shop keeps each cell small and
+   scales indefinitely as more invoices get added. ---- */
+async function loadAllInvoices(shops){
+  const lists = await Promise.all((shops||[]).map(s => safeGet(`invoices__${s.id}`)));
+  return lists.reduce((all, list)=> all.concat(list || []), []);
+}
+
+/* ---- Google Apps Script transport ----
+   Google's Web App responses don't carry CORS headers by default, so a
+   plain fetch() call from a Claude artifact (a different origin) gets
+   blocked with "Failed to fetch" even though the URL works fine when
+   you open it directly in a browser tab. Two standard workarounds:
+   - READS: JSONP via a <script> tag — browsers don't apply CORS to
+     script tags, only to fetch()/XHR.
+   - WRITES: fetch() with mode:'no-cors' — the browser still SENDS the
+     POST body (Apps Script receives and processes it fine), it just
+     can't let us read the response back. We treat a successful send
+     as success; the next read reflects the true state either way.
+   ---- */
+let _jsonpCounter = 0;
+function jsonpRequest(url, timeoutMs){
+  timeoutMs = timeoutMs || 10000;
+  return new Promise((resolve, reject)=>{
+    const cbName = '_yakyim_jsonp_' + (_jsonpCounter++) + '_' + Date.now();
+    const script = document.createElement('script');
+    let done = false;
+    const timer = setTimeout(()=>{
+      if(done) return; done = true;
+      cleanup();
+      reject(new Error('JSONP request timed out'));
+    }, timeoutMs);
+    function cleanup(){
+      delete window[cbName];
+      if(script.parentNode) script.parentNode.removeChild(script);
+      clearTimeout(timer);
+    }
+    window[cbName] = (data)=>{
+      if(done) return; done = true;
+      cleanup();
+      resolve(data);
+    };
+    script.onerror = ()=>{
+      if(done) return; done = true;
+      cleanup();
+      reject(new Error('JSONP script failed to load — check the Apps Script URL and that it is deployed with access "Anyone"'));
+    };
+    const sep = url.includes('?') ? '&' : '?';
+    script.src = url + sep + 'callback=' + cbName;
+    document.head.appendChild(script);
+  });
+}
+
+async function remoteGet(key){
+  const j = await jsonpRequest(`${APPS_SCRIPT_URL}?key=${encodeURIComponent(key)}`);
+  if(j.error) throw new Error(j.error);
+  return j.value; // JSON string or null
+}
+async function remoteSet(key, valueStr){
+  // 'text/plain' keeps this a CORS "simple request" even under no-cors mode.
+  await fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {'Content-Type': 'text/plain;charset=utf-8'},
+    body: JSON.stringify({ key, value: valueStr })
+  });
+  // Response is opaque under no-cors — can't confirm success from it.
+  // A real network failure (wrong URL, offline, DNS) still throws above,
+  // which the caller's retry/fallback logic already handles.
+  return true;
+}
+
+async function safeGet(key){
+  if(!usingLocalFallback){
+    try{
+      if(HAS_REMOTE){
+        const raw = await remoteGet(key);
+        return raw ? JSON.parse(raw) : null;
+      } else {
+        const r = await window.storage.get(key, SHARED);
+        return r ? JSON.parse(r.value) : null;
+      }
+    }catch(e){
+      console.error('remote get failed, switching to localStorage fallback', e);
+      usingLocalFallback = true;
+      startReconnectWatcher();
+    }
+  }
+  try{
+    const raw = localStorage.getItem(LOCAL_PREFIX+key);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){
+    console.error('localStorage read failed', key, e);
+    return null;
+  }
+}
+
+const sleep = (ms)=> new Promise(r=>setTimeout(r,ms));
+
+async function safeSet(key,val,retries){
+  retries = retries===undefined ? 3 : retries;
+  const valStr = JSON.stringify(val);
+
+  if(!usingLocalFallback){
+    for(let attempt=0; attempt<=retries; attempt++){
+      try{
+        if(HAS_REMOTE) await remoteSet(key, valStr);
+        else await window.storage.set(key, valStr, SHARED);
+        return true;
+      }
+      catch(e){
+        console.error('save fail (remote)',key,'attempt',attempt,e);
+        if(attempt<retries) await sleep(400*(attempt+1));
+      }
+    }
+    console.warn('remote storage unavailable — switching to localStorage fallback');
+    usingLocalFallback = true;
+    showToast('Cloud save unavailable — switched to saving in this browser only (no longer shared with others)', true);
+    startReconnectWatcher();
+  }
+
+  try{
+    localStorage.setItem(LOCAL_PREFIX+key, valStr);
+    return true;
+  }catch(e){
+    console.error('localStorage save failed', key, e);
+    return false;
+  }
+}
+
+/* ---- Pull the latest shared data from teammates and re-render.
+   Skipped while a modal is open so it never overwrites what
+   someone is actively typing. ---- */
+async function syncFromServer(showFeedback){
+  if(usingLocalFallback) return; // nothing to sync, this browser only
+  if(document.getElementById('modal-backdrop')) return; // don't disrupt an open form
+  if(SYNCING) return;
+  SYNCING = true;
+  try{
+    const [c,s,p] = await Promise.all([
+      safeGet('company'), safeGet('shops'), safeGet('products')
+    ]);
+    DB.company = c || DB.company;
+    DB.shops = s || DB.shops;
+    DB.products = p || DB.products;
+    DB.invoices = await loadAllInvoices(DB.shops);
+    lastSyncAt = Date.now();
+    render();
+    if(showFeedback) showToast('Synced ✓');
+  }catch(e){
+    console.error('sync failed', e);
+    if(showFeedback) showToast('Sync failed — check your connection', true);
+  }finally{
+    SYNCING = false;
+  }
+}
+function startAutoSync(){
+  if(AUTO_SYNC_TIMER || usingLocalFallback) return;
+  AUTO_SYNC_TIMER = setInterval(()=> syncFromServer(false), HAS_REMOTE ? 8000 : 4000);
+  // Sync immediately whenever the tab becomes visible/focused again —
+  // this is what makes it FEEL real-time: the moment you switch back
+  // to check on things, you see whatever a teammate just saved,
+  // instead of waiting for the next poll tick.
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState === 'visible') syncFromServer(false);
+  });
+  window.addEventListener('focus', ()=> syncFromServer(false));
+}
+function startStatusTicker(){
+  if(STATUS_TICK_TIMER) return;
+  STATUS_TICK_TIMER = setInterval(renderConnStatus, 1000);
+}
+/* ---- While stuck on localStorage (backend errored out),
+   periodically test if it's back. We deliberately do NOT
+   auto-merge/switch live — that risks silently overwriting
+   someone else's data. We just tell the user to reload, which
+   safely re-runs loadAll() from scratch. ---- */
+function startReconnectWatcher(){
+  if(RECONNECT_TIMER) return;
+  RECONNECT_TIMER = setInterval(async ()=>{
+    if(!usingLocalFallback){ clearInterval(RECONNECT_TIMER); RECONNECT_TIMER=null; return; }
+    try{
+      if(HAS_REMOTE) await remoteGet('company');
+      else{
+        if(!(typeof window!=='undefined' && window.storage && typeof window.storage.get==='function')) return;
+        await window.storage.get('company', SHARED);
+      }
+      clearInterval(RECONNECT_TIMER); RECONNECT_TIMER = null;
+      showToast('☁️ Cloud storage is back online — reload this page to reconnect and sync with everyone', true);
+    }catch(e){
+      // still down, keep waiting silently
+    }
+  }, 30000);
+}
+function connStatusText(){
+  if(usingLocalFallback) return '🔴 Local only — not shared with others';
+  if(!lastSyncAt) return '🟡 Shared — connecting…';
+  const secs = Math.max(0, Math.round((Date.now()-lastSyncAt)/1000));
+  const when = secs<2 ? 'just now' : secs+'s ago';
+  return `🟢 Shared${HAS_REMOTE ? ' (Sheets)' : ''} — synced ${when}`;
+}
+function renderConnStatus(){
+  const el = document.getElementById('conn-status');
+  if(el) el.textContent = connStatusText();
+}
+async function persistAll(){
+  await safeSet('company',DB.company);
+  await safeSet('shops',DB.shops);
+  await safeSet('products',DB.products);
+  for(const shop of DB.shops){
+    await persistInvoicesForShop(shop.id);
+  }
+}
+async function persist(key){
+  SAVING = true; renderSaveIndicator();
+  const ok = await safeSet(key, DB[key]);
+  SAVING = false; renderSaveIndicator();
+  if(!ok) showToast('Save failed. Retrying automatically — please check your connection and try saving again.', true);
+  return ok;
+}
+/* ---- Save only one shop's invoices (its own small cell/key) rather
+   than the whole invoices array every time something changes. ---- */
+async function persistInvoicesForShop(shopId){
+  SAVING = true; renderSaveIndicator();
+  const list = DB.invoices.filter(i=>i.shopId===shopId);
+  const ok = await safeSet(`invoices__${shopId}`, list);
+  SAVING = false; renderSaveIndicator();
+  if(!ok) showToast('Save failed. Retrying automatically — please check your connection and try saving again.', true);
+  return ok;
+}
+function renderSaveIndicator(){
+  const el = document.getElementById('save-indicator');
+  if(el) el.textContent = SAVING ? 'Saving…' : 'All changes saved';
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+let toastTimer=null;
+function showToast(msg, isErr){
+  const root = document.getElementById('toast-root');
+  clearTimeout(toastTimer);
+  root.innerHTML = `<div class="toast" style="${isErr?'background:#b3271f':''}">${isErr?'⚠':'✓'} ${escapeHtml(msg)}</div>`;
+  toastTimer = setTimeout(()=>{ root.innerHTML=''; }, 2600);
+}
+
+function escapeHtml(s){
+  return String(s??'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* ============================================================
+   DERIVED HELPERS
+   ============================================================ */
+function shopById(id){ return DB.shops.find(s=>s.id===id); }
+function invoicesForShop(id){ return DB.invoices.filter(i=>i.shopId===id).sort((a,b)=> b.date.localeCompare(a.date) || b.invoiceNo.localeCompare(a.invoiceNo)); }
+function invoiceSubtotal(inv){ return inv.items.reduce((s,it)=> s + (Number(it.qty)||0)*(Number(it.price)||0), 0); }
+function roundMYR(n){ return Math.round(n*20)/20; }
+function invoiceTotal(inv){ return roundMYR(invoiceSubtotal(inv)); }
+function shopTotal(id){ return invoicesForShop(id).reduce((s,i)=> s+invoiceTotal(i), 0); }
+function shopPaidTotal(id){ return invoicesForShop(id).filter(i=>i.status==='paid').reduce((s,i)=> s+invoiceTotal(i), 0); }
+function shopUnpaidTotal(id){ return invoicesForShop(id).filter(i=>i.status!=='paid').reduce((s,i)=> s+invoiceTotal(i), 0); }
+function nextInvoiceNo(shopId){
+  const nums = invoicesForShop(shopId).map(i=>{
+    const m = i.invoiceNo.match(/(\d+)/); return m? parseInt(m[1],10) : 0;
+  });
+  const max = nums.length? Math.max(...nums) : 0;
+  return 'IV-' + String(max+1).padStart(5,'0');
+}
+
+/* ============================================================
+   RENDER: ROOT ROUTER
+   ============================================================ */
+function render(){
+  const app = document.getElementById('app');
+  app.innerHTML = renderTopbar() + renderCrumbs();
+  if(VIEW.name==='dashboard') app.innerHTML += renderDashboard();
+  else if(VIEW.name==='shop') app.innerHTML += renderShopDetail(VIEW.shopId);
+  else if(VIEW.name==='catalog') app.innerHTML += renderCatalog();
+  else if(VIEW.name==='invoice'){
+    app.innerHTML += renderInvoiceView(VIEW.invoiceId);
+    const inv = DB.invoices.find(i=>i.id===VIEW.invoiceId);
+    if(inv) refreshInvoiceExportLinks(inv);
+  }
+  attachGlobalHandlers();
+}
+
+function go(name, extra){
+  VIEW = {name, shopId:null, invoiceId:null, ...extra};
+  render();
+  window.scrollTo({top:0,behavior:'smooth'});
+  syncFromServer(false); // pull latest the instant you navigate somewhere
+}
+
+function renderTopbar(){
+  return `
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">YY</div>
+      <div class="brand-text">
+        <h1>${escapeHtml(DB.company?.name || 'Invoice System')}</h1>
+        <p id="save-indicator">All changes saved</p>
+        <p id="conn-status" style="margin:2px 0 0;font-size:11.5px;color:#cfe0ee;">${connStatusText()}</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      ${usingLocalFallback ? '' : '<button class="btn" id="btn-sync">🔄 Sync</button>'}
+      <button class="btn" data-nav="catalog">📦 Products &amp; Pricing</button>
+      <button class="btn btn-gold" data-nav="dashboard">🏬 All Shops</button>
+    </div>
+  </div>`;
+}
+
+function renderCrumbs(){
+  let parts = [`<button data-nav="dashboard">🏠 Home</button>`];
+  if(VIEW.name==='shop'){
+    const shop = shopById(VIEW.shopId);
+    parts.push(`<span class="sep">›</span><span class="current">${escapeHtml(shop?.name||'')}</span>`);
+  } else if(VIEW.name==='catalog'){
+    parts.push(`<span class="sep">›</span><span class="current">Products &amp; Pricing</span>`);
+  } else if(VIEW.name==='invoice'){
+    const inv = DB.invoices.find(i=>i.id===VIEW.invoiceId);
+    const shop = inv? shopById(inv.shopId): null;
+    if(shop) parts.push(`<span class="sep">›</span><button data-nav="shop" data-shop="${shop.id}">${escapeHtml(shop.name)}</button>`);
+    parts.push(`<span class="sep">›</span><span class="current">Invoice ${escapeHtml(inv?.invoiceNo||'')}</span>`);
+  }
+  return `<div class="crumbs">${parts.join('')}</div>`;
+}
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+function renderDashboard(){
+  const cards = DB.shops.map(s=>{
+    const invs = invoicesForShop(s.id);
+    const unpaid = shopUnpaidTotal(s.id);
+    const paid = shopPaidTotal(s.id);
+    return `
+    <div class="shop-card" data-nav="shop" data-shop="${s.id}">
+      <span class="tag">${invs.length} invoice${invs.length===1?'':'s'}</span>
+      <h3>${escapeHtml(s.name)}</h3>
+      <div class="addr">${escapeHtml((s.billTo||[]).slice(1).join('\n'))}</div>
+      <div class="stats">
+        <div class="stat"><b style="color:var(--bad);">${money(unpaid)}</b><span>Unpaid</span></div>
+        <div class="stat"><b style="color:var(--good);">${money(paid)}</b><span>Paid</span></div>
+        <div class="stat"><b>${money(shopTotal(s.id))}</b><span>Total</span></div>
+      </div>
+      <button class="btn btn-ghost btn-sm kebab" data-edit-shop="${s.id}" title="Edit shop">✏️</button>
+    </div>`;
+  }).join('');
+
+  const emptyState = DB.shops.length ? '' : `
+    <div class="empty">
+      <div class="big">🏬</div>
+      <h3>No shops yet</h3>
+      <p>Add your customer shops to start creating invoices</p>
+    </div>`;
+
+  const grandUnpaid = DB.shops.reduce((s,shop)=> s+shopUnpaidTotal(shop.id), 0);
+  const grandPaid = DB.shops.reduce((s,shop)=> s+shopPaidTotal(shop.id), 0);
+
+  return `
+  <div class="section-head">
+    <div><h2>Shops</h2><div class="hint">Select a shop to view or create invoices — each shop has its own invoice numbering</div></div>
+    <button class="btn btn-primary" id="btn-add-shop">+ Add Shop</button>
+  </div>
+  ${DB.shops.length ? `
+  <div class="card card-pad" style="margin-bottom:16px;display:flex;gap:28px;flex-wrap:wrap;">
+    <div><div class="hint">Total Unpaid (All Shops)</div><div style="font-size:20px;font-weight:800;color:var(--bad);">${money(grandUnpaid)}</div></div>
+    <div><div class="hint">Total Paid (All Shops)</div><div style="font-size:20px;font-weight:800;color:var(--good);">${money(grandPaid)}</div></div>
+    <div><div class="hint">Grand Total</div><div style="font-size:20px;font-weight:800;color:var(--navy-darker);">${money(grandUnpaid+grandPaid)}</div></div>
+  </div>` : ''}
+  <div class="grid-shops">${cards}</div>
+  ${emptyState}
+  `;
+}
+
+/* ============================================================
+   SHOP DETAIL (invoice list)
+   ============================================================ */
+function renderShopDetail(shopId){
+  const shop = shopById(shopId);
+  if(!shop) return `<div class="empty"><h3>Shop not found</h3></div>`;
+  const invs = invoicesForShop(shopId);
+
+  const rows = invs.map(inv=>{
+    const total = invoiceTotal(inv);
+    const paid = inv.status==='paid';
+    return `
+    <tr>
+      <td class="mono">${escapeHtml(inv.invoiceNo)}</td>
+      <td>${fmtDate(inv.date)}</td>
+      <td>${escapeHtml(inv.terms||'-')}</td>
+      <td>${inv.items.length} item${inv.items.length===1?'':'s'}</td>
+      <td><button class="pill pill-btn ${paid?'pill-paid':'pill-unpaid'}" data-toggle-status="${inv.id}" title="Click to change status">${paid?'✓ Paid':'● Unpaid'}</button></td>
+      <td class="num-right mono">${money(total)}</td>
+      <td>
+        <div class="row-actions">
+          <button class="btn btn-sm btn-ghost" data-view-invoice="${inv.id}">View</button>
+          <button class="btn btn-sm btn-ghost" data-edit-invoice="${inv.id}">Edit</button>
+          <button class="btn btn-sm btn-danger" data-del-invoice="${inv.id}">Delete</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const empty = invs.length ? '' : `
+    <div class="empty">
+      <div class="big">🧾</div>
+      <h3>No invoices yet for this shop</h3>
+      <p>Click "New Invoice" to create the first one</p>
+    </div>`;
+
+  return `
+  <div class="card card-pad" style="margin-bottom:16px;">
+    <div class="section-head" style="margin-bottom:6px;">
+      <div>
+        <h2>${escapeHtml(shop.name)}</h2>
+        <div class="hint" style="white-space:pre-line;">${escapeHtml((shop.billTo||[]).join('\n'))}</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" id="btn-edit-shop-h">✏️ Edit Shop Info</button>
+        <button class="btn btn-danger" id="btn-del-shop">🗑 Delete Shop</button>
+        <button class="btn btn-primary" id="btn-new-invoice">+ New Invoice</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:28px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px dashed var(--line);">
+      <div><div class="hint">Unpaid</div><div style="font-size:19px;font-weight:800;color:var(--bad);">${money(shopUnpaidTotal(shopId))}</div></div>
+      <div><div class="hint">Paid</div><div style="font-size:19px;font-weight:800;color:var(--good);">${money(shopPaidTotal(shopId))}</div></div>
+      <div><div class="hint">Total</div><div style="font-size:19px;font-weight:800;color:var(--navy-darker);">${money(shopTotal(shopId))}</div></div>
+    </div>
+  </div>
+
+  <div class="card card-pad">
+    <div class="section-head">
+      <h2>All Invoices (${invs.length})</h2>
+    </div>
+    ${invs.length? `<table class="list">
+      <thead><tr>
+        <th>No.</th><th>Date</th><th>Terms</th><th>Items</th><th>Status</th><th class="num-right">Total</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>` : empty}
+  </div>
+  `;
+}
+
+/* ============================================================
+   PRODUCT CATALOG
+   ============================================================ */
+let catalogFilter = '';
+function renderCatalog(){
+  const q = catalogFilter.trim().toLowerCase();
+  const filtered = DB.products.filter(p=> !q || p.code.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q)).slice(0,300);
+  const rows = filtered.map(p=>`
+    <tr>
+      <td class="mono">${escapeHtml(p.code)}</td>
+      <td>${escapeHtml(p.desc)}</td>
+      <td>${escapeHtml(p.unit||'-')}</td>
+      <td class="num-right mono">${money(p.price)}</td>
+      <td><div class="row-actions">
+        <button class="btn btn-sm btn-ghost" data-edit-product="${escapeHtml(p.code)}">Edit</button>
+        <button class="btn btn-sm btn-danger" data-del-product="${escapeHtml(p.code)}">Delete</button>
+      </div></td>
+    </tr>`).join('');
+
+  return `
+  <div class="card card-pad">
+    <div class="section-head">
+      <div><h2>Products &amp; Pricing (${DB.products.length})</h2><div class="hint">Used to auto-fill item codes when creating invoices</div></div>
+      <div style="display:flex;gap:8px;">
+        <input id="catalog-search" placeholder="Search code/name…" value="${escapeHtml(catalogFilter)}"
+          style="border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13.5px;width:220px;">
+        <button class="btn btn-primary" id="btn-add-product">+ Add Product</button>
+      </div>
+    </div>
+    <table class="list">
+      <thead><tr><th>Code</th><th>Description</th><th>Unit</th><th class="num-right">Price/Unit</th><th></th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);padding:24px;">No matching products found</td></tr>`}</tbody>
+    </table>
+    ${DB.products.length>300 ? `<div class="hint" style="margin-top:10px;">Showing first 300 items — use search to narrow results</div>`:''}
+  </div>`;
+}
+
+/* ============================================================
+   INVOICE VIEW (preview + print)
+   ============================================================ */
+function renderInvoiceView(invId){
+  const inv = DB.invoices.find(i=>i.id===invId);
+  if(!inv) return `<div class="empty"><h3>Invoice not found</h3></div>`;
+  const shop = shopById(inv.shopId);
+  const subtotal = invoiceSubtotal(inv);
+  const total = roundMYR(subtotal);
+  const roundingAdj = total - subtotal;
+  const paid = inv.status==='paid';
+
+  const rows = inv.items.map((it,idx)=>`
+    <tr>
+      <td>${idx+1}</td>
+      <td>${escapeHtml(it.code||'')}</td>
+      <td>${escapeHtml(it.desc)}</td>
+      <td class="r">${Number(it.qty)}</td>
+      <td>${escapeHtml(it.unit||'')}</td>
+      <td class="r">${Number(it.price).toFixed(2)}</td>
+      <td class="r">${(Number(it.qty)*Number(it.price)).toFixed(2)}</td>
+    </tr>`).join('');
+
+  const roundingRow = Math.abs(roundingAdj) >= 0.005
+    ? `<tr class="doc-subtotal-row"><td colspan="6" class="r">Subtotal (MYR)</td><td class="r">${subtotal.toFixed(2)}</td></tr>
+       <tr class="doc-subtotal-row"><td colspan="6" class="r">Rounding Adjustment</td><td class="r">${roundingAdj>=0?'+':''}${roundingAdj.toFixed(2)}</td></tr>`
+    : '';
+
+  return `
+  <div class="doc-toolbar">
+    <div>
+      <button class="btn" data-nav="shop" data-shop="${shop.id}">← Back to shop invoices</button>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost" data-edit-invoice="${inv.id}">✏️ Edit</button>
+      <a class="btn btn-ghost" id="link-open-print" href="#" target="_blank" rel="noopener">🖨️ Open to Print / Save as PDF</a>
+      <a class="btn btn-gold" id="link-download-html" href="#" download="invoice.html">⬇️ Download HTML</a>
+    </div>
+  </div>
+  <div class="field-note" style="max-width:820px;margin:0 auto 14px;text-align:center;">Opens in a new tab — from there use your browser's Print (Ctrl/Cmd+P) and choose "Save as PDF"</div>
+  <div class="doc-wrap">
+    <div class="invoice-doc" id="invoice-doc-root">
+      <div class="doc-header">
+        <h1>${escapeHtml(DB.company.name)}</h1>
+        <div class="reg">${escapeHtml(DB.company.regNo)}</div>
+        <div class="addr">${escapeHtml(DB.company.address)} &nbsp;&nbsp; Tel: ${escapeHtml(DB.company.tel)}</div>
+      </div>
+      <div class="doc-meta">
+        <div class="bill-to">${escapeHtml((shop.billTo||[]).join('\n'))}</div>
+        <table class="meta-table">
+          <tr><td>Invoice No.</td><td class="inv-no">${escapeHtml(inv.invoiceNo)}</td></tr>
+          <tr><td>Terms:</td><td>${escapeHtml(inv.terms||'-')}</td></tr>
+          <tr><td>Date:</td><td>${escapeHtml(inv.date)}</td></tr>
+        </table>
+      </div>
+      <table class="doc-table">
+        <thead><tr>
+          <th style="width:32px;">No</th><th style="width:70px;">Item Code</th><th>Description</th>
+          <th class="r" style="width:50px;">Qty</th><th style="width:70px;">Unit</th>
+          <th class="r" style="width:80px;">Price/Unit</th><th class="r" style="width:90px;">Amount (MYR)</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+        ${roundingRow}
+        <tr class="doc-total-row"><td colspan="6" class="r">TOTAL (MYR)</td><td class="r">${total.toFixed(2)}</td></tr>
+      </table>
+      <div class="doc-footer">
+        <div class="cgen">COMPUTER-GENERATED, NO SIGNATURE REQUIRED</div>
+        <div class="thanks">Thank you for your business! — ${escapeHtml(DB.company.name)}</div>
+      </div>
+    </div>
+  </div>
+  <div class="doc-status-bar">
+    <span>Payment status (shown in-app only, not printed on the invoice):</span>
+    <button class="pill ${paid?'pill-paid':'pill-unpaid'} pill-btn" id="btn-toggle-status">${paid?'✓ Paid':'● Unpaid'} — click to change</button>
+  </div>`;
+}
+
+/* ============================================================
+   EXPORT (print / download as standalone HTML)
+   No external libraries, no network calls — works even when a
+   sandboxed viewer blocks window.print() or CDN scripts. Both
+   export actions are REAL <a> links the user clicks themselves
+   (not a script-triggered click), which is what makes downloads
+   and new-tab opens reliable inside a sandboxed artifact.
+   "Open to Print" opens a plain, unsandboxed browser tab with a
+   Print button in it — printing from there is unaffected by any
+   restrictions in the artifact's own frame.
+   ============================================================ */
+let _lastExportUrl = null;
+
+function buildInvoiceStandaloneHTML(inv, node){
+  const styleEl = document.querySelector('style');
+  const styleCss = styleEl ? styleEl.innerHTML : '';
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Invoice ${escapeHtml(inv.invoiceNo)}</title>
+<style>
+  body{font-family:Arial,Helvetica,sans-serif;background:#eef1f4;margin:0;padding:24px;}
+  .hint-bar{max-width:820px;margin:0 auto 14px;text-align:center;font-size:13px;color:#555;}
+  .hint-bar button{margin-top:8px;padding:8px 18px;border-radius:8px;border:none;background:#1c4e73;color:#fff;font-size:13px;cursor:pointer;}
+  ${styleCss}
+  @media print{ .hint-bar{display:none;} body{background:#fff;padding:0;} }
+</style></head>
+<body>
+  <div class="hint-bar">This is your invoice.<br>
+    <button onclick="window.print()">🖨️ Print / Save as PDF</button>
+  </div>
+  <div class="doc-wrap">${node.outerHTML}</div>
+</body></html>`;
+}
+
+function refreshInvoiceExportLinks(inv){
+  const node = document.getElementById('invoice-doc-root');
+  const openLink = document.getElementById('link-open-print');
+  const downloadLink = document.getElementById('link-download-html');
+  if(!node || !openLink || !downloadLink) return;
+  try{
+    const html = buildInvoiceStandaloneHTML(inv, node);
+    const blob = new Blob([html], {type:'text/html'});
+    if(_lastExportUrl) URL.revokeObjectURL(_lastExportUrl);
+    const url = URL.createObjectURL(blob);
+    _lastExportUrl = url;
+    openLink.href = url;
+    downloadLink.href = url;
+    downloadLink.download = `Invoice_${inv.invoiceNo}.html`;
+  }catch(e){
+    console.error('building export link failed', e);
+    showToast('Could not prepare the invoice for export', true);
+  }
+}
+
+/* ============================================================
+   ATTACH HANDLERS (delegation)
+   ============================================================ */
+function attachGlobalHandlers(){
+  document.querySelectorAll('[data-nav]').forEach(el=>{
+    el.onclick = ()=>{
+      const name = el.getAttribute('data-nav');
+      if(name==='shop') go('shop',{shopId:el.getAttribute('data-shop')});
+      else go(name);
+    };
+  });
+  const syncBtn = document.getElementById('btn-sync');
+  if(syncBtn) syncBtn.onclick = ()=> syncFromServer(true);
+
+  const addShopBtn = document.getElementById('btn-add-shop');
+  if(addShopBtn) addShopBtn.onclick = ()=> openShopModal(null);
+
+  document.querySelectorAll('[data-edit-shop]').forEach(el=>{
+    el.onclick = (e)=>{ e.stopPropagation(); openShopModal(el.getAttribute('data-edit-shop')); };
+  });
+  const editShopH = document.getElementById('btn-edit-shop-h');
+  if(editShopH) editShopH.onclick = ()=> openShopModal(VIEW.shopId);
+  const delShopBtn = document.getElementById('btn-del-shop');
+  if(delShopBtn) delShopBtn.onclick = ()=> confirmDeleteShop(VIEW.shopId);
+
+  const newInvBtn = document.getElementById('btn-new-invoice');
+  if(newInvBtn) newInvBtn.onclick = ()=> openInvoiceModal(null, VIEW.shopId);
+
+  document.querySelectorAll('[data-view-invoice]').forEach(el=>{
+    el.onclick = ()=> go('invoice',{invoiceId:el.getAttribute('data-view-invoice')});
+  });
+  document.querySelectorAll('[data-edit-invoice]').forEach(el=>{
+    el.onclick = ()=>{
+      const inv = DB.invoices.find(i=>i.id===el.getAttribute('data-edit-invoice'));
+      openInvoiceModal(inv, inv.shopId);
+    };
+  });
+  document.querySelectorAll('[data-del-invoice]').forEach(el=>{
+    el.onclick = ()=> confirmDeleteInvoice(el.getAttribute('data-del-invoice'));
+  });
+  document.querySelectorAll('[data-toggle-status]').forEach(el=>{
+    el.onclick = async ()=>{
+      const inv = DB.invoices.find(i=>i.id===el.getAttribute('data-toggle-status'));
+      inv.status = inv.status==='paid' ? 'unpaid' : 'paid';
+      render();
+      await persistInvoicesForShop(inv.shopId);
+      showToast(inv.status==='paid' ? 'Marked as paid ✓' : 'Marked as unpaid');
+    };
+  });
+
+  const toggleStatusBtn = document.getElementById('btn-toggle-status');
+  if(toggleStatusBtn) toggleStatusBtn.onclick = async ()=>{
+    const inv = DB.invoices.find(i=>i.id===VIEW.invoiceId);
+    inv.status = inv.status==='paid' ? 'unpaid' : 'paid';
+    render();
+    await persistInvoicesForShop(inv.shopId);
+    showToast(inv.status==='paid' ? 'Marked as paid ✓' : 'Marked as unpaid');
+  };
+
+  const catSearch = document.getElementById('catalog-search');
+  if(catSearch){
+    catSearch.oninput = (e)=>{ catalogFilter = e.target.value; render(); document.getElementById('catalog-search').focus(); const v=document.getElementById('catalog-search'); v.value=catalogFilter; v.setSelectionRange(v.value.length,v.value.length); };
+  }
+  const addProdBtn = document.getElementById('btn-add-product');
+  if(addProdBtn) addProdBtn.onclick = ()=> openProductModal(null);
+  document.querySelectorAll('[data-edit-product]').forEach(el=>{
+    el.onclick = ()=> openProductModal(el.getAttribute('data-edit-product'));
+  });
+  document.querySelectorAll('[data-del-product]').forEach(el=>{
+    el.onclick = ()=> confirmDeleteProduct(el.getAttribute('data-del-product'));
+  });
+}
+
+/* ============================================================
+   MODAL: generic helpers
+   ============================================================ */
+function closeModal(){ document.getElementById('modal-root').innerHTML=''; }
+function openModal(html, wide){
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-backdrop" id="modal-backdrop">
+      <div class="modal ${wide?'wide':''}">${html}</div>
+    </div>`;
+  document.getElementById('modal-backdrop').addEventListener('mousedown', (e)=>{
+    if(e.target.id==='modal-backdrop') closeModal();
+  });
+}
+
+/* ============================================================
+   MODAL: SHOP add/edit
+   ============================================================ */
+function openShopModal(shopId){
+  const shop = shopId? shopById(shopId) : {id:null,name:'',billTo:['','','']};
+  const lines = (shop.billTo && shop.billTo.length? shop.billTo : ['','','']);
+  openModal(`
+    <div class="modal-head"><h3>${shopId?'Edit Shop':'Add New Shop'}</h3>
+      <button class="close-x" id="m-close">✕</button></div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Shop Name (shown in list) <span class="req">*</span></label>
+        <input id="f-shop-name" value="${escapeHtml(shop.name)}" placeholder="e.g. SP Sports Academy Sdn Bhd">
+      </div>
+      <div class="field">
+        <label>Bill To details — enter exactly as you want it to appear on the invoice. First line is the name/contact.</label>
+        <textarea id="f-shop-billto" rows="4" placeholder="Contact name / Company&#10;Address line 1&#10;Address line 2">${escapeHtml(lines.join('\n'))}</textarea>
+        <span class="field-note">Start a new line for each line you want displayed</span>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="m-cancel">Cancel</button>
+      <button class="btn btn-primary" id="m-save">Save</button>
+    </div>
+  `);
+  document.getElementById('m-close').onclick = closeModal;
+  document.getElementById('m-cancel').onclick = closeModal;
+  document.getElementById('m-save').onclick = async ()=>{
+    const name = document.getElementById('f-shop-name').value.trim();
+    if(!name){ showToast('Please enter a shop name', true); return; }
+    const billTo = document.getElementById('f-shop-billto').value.split('\n').map(s=>s.trim()).filter((s,i,a)=> s!=='' || i<a.length-1);
+    if(shopId){
+      const s = shopById(shopId); s.name = name; s.billTo = billTo.length? billTo : [name];
+    } else {
+      DB.shops.push({id:uid('shop'), name, billTo: billTo.length? billTo : [name]});
+    }
+    closeModal(); render();
+    await persist('shops');
+    showToast('Shop info saved');
+  };
+}
+
+function confirmDeleteShop(shopId){
+  const shop = shopById(shopId);
+  const invCount = invoicesForShop(shopId).length;
+  openModal(`
+    <div class="modal-head"><h3>Delete this shop?</h3><button class="close-x" id="m-close">✕</button></div>
+    <div class="modal-body">
+      <p>You are about to delete <b>${escapeHtml(shop.name)}</b>${invCount? ` and all ${invCount} invoice${invCount===1?'':'s'} for this shop` : ''}. This action cannot be undone.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="m-cancel">Cancel</button>
+      <button class="btn btn-danger" id="m-confirm">Delete Shop</button>
+    </div>
+  `);
+  document.getElementById('m-close').onclick = closeModal;
+  document.getElementById('m-cancel').onclick = closeModal;
+  document.getElementById('m-confirm').onclick = async ()=>{
+    DB.shops = DB.shops.filter(s=>s.id!==shopId);
+    DB.invoices = DB.invoices.filter(i=>i.shopId!==shopId);
+    closeModal(); go('dashboard');
+    await Promise.all([persist('shops'), persistInvoicesForShop(shopId)]);
+    showToast('Shop deleted');
+  };
+}
+
+/* ============================================================
+   MODAL: PRODUCT add/edit
+   ============================================================ */
+function openProductModal(code){
+  const p = code? DB.products.find(x=>x.code===code) : {code:'',desc:'',unit:'',price:0};
+  openModal(`
+    <div class="modal-head"><h3>${code?'Edit Product':'Add New Product'}</h3><button class="close-x" id="m-close">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field"><label>Product Code <span class="req">*</span></label>
+          <input id="f-p-code" value="${escapeHtml(p.code)}" ${code?'readonly style="background:#f2f4f6;"':''}></div>
+        <div class="field"><label>Unit</label><input id="f-p-unit" value="${escapeHtml(p.unit)}" placeholder="Pack / Bottle / Kilogram"></div>
+      </div>
+      <div class="field"><label>Product Name <span class="req">*</span></label><input id="f-p-desc" value="${escapeHtml(p.desc)}"></div>
+      <div class="field"><label>Price/Unit (MYR)</label><input id="f-p-price" type="number" step="0.01" value="${p.price}"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="m-cancel">Cancel</button>
+      <button class="btn btn-primary" id="m-save">Save</button>
+    </div>
+  `);
+  document.getElementById('m-close').onclick = closeModal;
+  document.getElementById('m-cancel').onclick = closeModal;
+  document.getElementById('m-save').onclick = async ()=>{
+    const codeVal = document.getElementById('f-p-code').value.trim();
+    const desc = document.getElementById('f-p-desc').value.trim();
+    const unit = document.getElementById('f-p-unit').value.trim();
+    const price = parseFloat(document.getElementById('f-p-price').value)||0;
+    if(!codeVal || !desc){ showToast('Please enter code and product name', true); return; }
+    if(code){
+      Object.assign(p,{desc,unit,price});
+    } else {
+      if(DB.products.some(x=>x.code===codeVal)){ showToast('This product code already exists', true); return; }
+      DB.products.push({code:codeVal,desc,unit,price});
+    }
+    closeModal(); render();
+    await persist('products');
+    showToast('Product saved');
+  };
+}
+function confirmDeleteProduct(code){
+  openModal(`
+    <div class="modal-head"><h3>Delete this product?</h3><button class="close-x" id="m-close">✕</button></div>
+    <div class="modal-body"><p>Remove product code <b>${escapeHtml(code)}</b> from the catalog</p></div>
+    <div class="modal-foot"><button class="btn" id="m-cancel">Cancel</button><button class="btn btn-danger" id="m-confirm">Delete</button></div>
+  `);
+  document.getElementById('m-close').onclick = closeModal;
+  document.getElementById('m-cancel').onclick = closeModal;
+  document.getElementById('m-confirm').onclick = async ()=>{
+    DB.products = DB.products.filter(p=>p.code!==code);
+    closeModal(); render();
+    await persist('products');
+    showToast('Product deleted');
+  };
+}
+
+/* ============================================================
+   MODAL: INVOICE add/edit
+   ============================================================ */
+function openInvoiceModal(existing, shopId){
+  DRAFT = existing ? JSON.parse(JSON.stringify(existing)) : {
+    id:null, invoiceNo: nextInvoiceNo(shopId), shopId, date: todayISO(), terms:'14 days',
+    status:'unpaid',
+    items:[ blankItem() ]
+  };
+  renderInvoiceModal();
+}
+function blankItem(){ return {code:'',desc:'',qty:1,unit:'',price:0}; }
+
+function renderInvoiceModal(){
+  const shopOptions = DB.shops.map(s=>`<option value="${s.id}" ${s.id===DRAFT.shopId?'selected':''}>${escapeHtml(s.name)}</option>`).join('');
+  const subtotal = DRAFT.items.reduce((s,it)=> s + (Number(it.qty)||0)*(Number(it.price)||0), 0);
+  const total = roundMYR(subtotal);
+  const roundingAdj = total - subtotal;
+  const showRounding = Math.abs(roundingAdj) >= 0.005;
+  const sortedProducts = [...DB.products].sort((a,b)=> a.desc.localeCompare(b.desc));
+
+  const rows = DRAFT.items.map((it,idx)=>{
+    const isKnown = DB.products.some(p=>p.code===it.code && p.desc===it.desc);
+    const isBlank = !it.code && !it.desc;
+    const isCustom = !isBlank && !isKnown;
+    const descOptions = [
+      `<option value="" ${isBlank?'selected':''}>— Select item —</option>`,
+      `<option value="__custom__" ${isCustom?'selected':''}>✎ Custom / type manually…</option>`,
+      ...sortedProducts.map(p=>`<option value="${escapeHtml(p.code)}" ${it.code===p.code && it.desc===p.desc?'selected':''}>${escapeHtml(p.desc)}</option>`)
+    ].join('');
+    return `
+    <tr data-idx="${idx}">
+      <td style="padding-top:9px;">${idx+1}</td>
+      <td>
+        <input class="item-code" list="product-datalist" value="${escapeHtml(it.code)}" placeholder="Code" data-idx="${idx}">
+      </td>
+      <td>
+        <select class="item-desc-select" data-idx="${idx}">${descOptions}</select>
+        ${isCustom ? `<input class="item-desc-custom" value="${escapeHtml(it.desc)}" placeholder="Custom description" data-idx="${idx}" style="margin-top:6px;">` : ''}
+      </td>
+      <td style="width:70px;"><input class="qty item-qty" type="number" step="any" value="${it.qty}" data-idx="${idx}"></td>
+      <td style="width:90px;"><input class="item-unit" value="${escapeHtml(it.unit)}" placeholder="Unit" data-idx="${idx}"></td>
+      <td style="width:90px;"><input class="price item-price" type="number" step="0.01" value="${it.price}" data-idx="${idx}"></td>
+      <td class="amt">${((Number(it.qty)||0)*(Number(it.price)||0)).toFixed(2)}</td>
+      <td><button class="rm" data-rm="${idx}" title="Remove this item">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  openModal(`
+    <div class="modal-head"><h3>${DRAFT.id? 'Edit Invoice '+escapeHtml(DRAFT.invoiceNo) : 'New Invoice'}</h3>
+      <button class="close-x" id="m-close">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field"><label>Shop <span class="req">*</span></label>
+          <select id="f-inv-shop">${shopOptions}</select></div>
+        <div class="field"><label>Invoice No.</label>
+          <input id="f-inv-no" value="${escapeHtml(DRAFT.invoiceNo)}"></div>
+        <div class="field"><label>Date</label><input id="f-inv-date" type="date" value="${DRAFT.date}"></div>
+        <div class="field"><label>Payment Terms</label><input id="f-inv-terms" value="${escapeHtml(DRAFT.terms||'')}" placeholder="e.g. 14 days"></div>
+      </div>
+      <div class="field">
+        <label>Payment Status</label>
+        <div class="status-toggle">
+          <label class="${DRAFT.status!=='paid'?'sel-unpaid':''}"><input type="radio" name="f-status" value="unpaid" ${DRAFT.status!=='paid'?'checked':''}><span>Unpaid</span></label>
+          <label class="${DRAFT.status==='paid'?'sel-paid':''}"><input type="radio" name="f-status" value="paid" ${DRAFT.status==='paid'?'checked':''}><span>Paid</span></label>
+        </div>
+      </div>
+
+      <label style="font-size:12px;font-weight:700;color:var(--ink-soft);">Line Items</label>
+      <table class="item-table">
+        <thead><tr><th style="width:22px;">#</th><th style="width:110px;">Code</th><th>Description</th><th>Qty</th><th>Unit</th><th>Price/Unit</th><th style="width:80px;">Amount</th><th></th></tr></thead>
+        <tbody id="item-rows">${rows}</tbody>
+      </table>
+      <datalist id="product-datalist">
+        ${DB.products.map(p=>`<option value="${escapeHtml(p.code)} — ${escapeHtml(p.desc)}"></option>`).join('')}
+      </datalist>
+      <button class="btn btn-sm add-row-btn" id="btn-add-item">+ Add Item</button>
+
+      <div class="totals-box"><table>
+        <tr id="totals-subtotal-row" style="${showRounding?'':'display:none;'}"><td>Subtotal</td><td id="totals-subtotal-cell">${money(subtotal)}</td></tr>
+        <tr id="totals-rounding-row" style="${showRounding?'':'display:none;'}"><td>Rounding Adjustment</td><td id="totals-rounding-cell">${roundingAdj>=0?'+':''}${roundingAdj.toFixed(2)}</td></tr>
+        <tr class="grand"><td>Grand Total</td><td id="totals-grand-cell">${money(total)}</td></tr>
+      </table></div>
+      <div class="field-note" style="text-align:right;margin-top:4px;">Rounded to the nearest 5 sen (Malaysia rounding mechanism)</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="m-cancel">Cancel</button>
+      <button class="btn btn-primary" id="m-save">💾 Save Invoice</button>
+    </div>
+  `, true);
+
+  document.getElementById('m-close').onclick = closeModal;
+  document.getElementById('m-cancel').onclick = closeModal;
+
+  document.getElementById('f-inv-shop').onchange = (e)=>{ DRAFT.shopId = e.target.value; };
+  document.getElementById('f-inv-no').oninput = (e)=>{ DRAFT.invoiceNo = e.target.value; };
+  document.getElementById('f-inv-date').onchange = (e)=>{ DRAFT.date = e.target.value; };
+  document.getElementById('f-inv-terms').oninput = (e)=>{ DRAFT.terms = e.target.value; };
+  document.querySelectorAll('input[name="f-status"]').forEach(r=>{
+    r.onchange = (e)=>{ DRAFT.status = e.target.value; renderInvoiceModal(); };
+  });
+
+  document.querySelectorAll('.item-code').forEach(inp=>{
+    inp.addEventListener('change', (e)=>{
+      const idx = +e.target.dataset.idx;
+      const val = e.target.value;
+      const m = val.match(/^(\S+)\s*—\s*(.*)$/);
+      const code = m? m[1] : val.trim();
+      const prod = DB.products.find(p=>p.code===code);
+      DRAFT.items[idx].code = code;
+      if(prod){
+        DRAFT.items[idx].desc = prod.desc;
+        DRAFT.items[idx].unit = prod.unit;
+        DRAFT.items[idx].price = prod.price;
+      }
+      renderInvoiceModal();
+    });
+  });
+  document.querySelectorAll('.item-desc-select').forEach(sel=>{
+    sel.addEventListener('change', (e)=>{
+      const idx = +e.target.dataset.idx;
+      const val = e.target.value;
+      if(val === '__custom__'){
+        DRAFT.items[idx].code = '';
+      } else if(val === ''){
+        DRAFT.items[idx].code = '';
+        DRAFT.items[idx].desc = '';
+        DRAFT.items[idx].unit = '';
+        DRAFT.items[idx].price = 0;
+      } else {
+        const prod = DB.products.find(p=>p.code===val);
+        if(prod){
+          DRAFT.items[idx].code = prod.code;
+          DRAFT.items[idx].desc = prod.desc;
+          DRAFT.items[idx].unit = prod.unit;
+          DRAFT.items[idx].price = prod.price;
+        }
+      }
+      renderInvoiceModal();
+    });
+  });
+  document.querySelectorAll('.item-desc-custom').forEach(inp=>{
+    inp.oninput = (e)=>{ DRAFT.items[+e.target.dataset.idx].desc = e.target.value; };
+  });
+  document.querySelectorAll('.item-qty').forEach(inp=>{
+    inp.oninput = (e)=>{ DRAFT.items[+e.target.dataset.idx].qty = e.target.value; updateRowAmount(+e.target.dataset.idx); updateGrandTotal(); };
+  });
+  document.querySelectorAll('.item-unit').forEach(inp=>{
+    inp.oninput = (e)=>{ DRAFT.items[+e.target.dataset.idx].unit = e.target.value; };
+  });
+  document.querySelectorAll('.item-price').forEach(inp=>{
+    inp.oninput = (e)=>{ DRAFT.items[+e.target.dataset.idx].price = e.target.value; updateRowAmount(+e.target.dataset.idx); updateGrandTotal(); };
+  });
+  document.querySelectorAll('[data-rm]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const idx = +btn.dataset.rm;
+      DRAFT.items.splice(idx,1);
+      if(DRAFT.items.length===0) DRAFT.items.push(blankItem());
+      renderInvoiceModal();
+    };
+  });
+  document.getElementById('btn-add-item').onclick = ()=>{
+    DRAFT.items.push(blankItem());
+    renderInvoiceModal();
+    const sels = document.querySelectorAll('.item-desc-select');
+    if(sels.length) sels[sels.length-1].focus();
+  };
+
+  document.getElementById('m-save').onclick = async ()=>{
+    if(!DRAFT.shopId){ showToast('Please select a shop', true); return; }
+    if(!DRAFT.invoiceNo.trim()){ showToast('Please enter an invoice number', true); return; }
+    const cleanItems = DRAFT.items
+      .map(it=>({code:(it.code||'').trim(), desc:(it.desc||'').trim(), qty:Number(it.qty)||0, unit:(it.unit||'').trim(), price:Number(it.price)||0}))
+      .filter(it=> it.desc!=='' && it.qty>0);
+    if(cleanItems.length===0){ showToast('Please add at least one line item', true); return; }
+    DRAFT.items = cleanItems;
+
+    let prevShopId = null;
+    if(DRAFT.id){
+      const idx = DB.invoices.findIndex(i=>i.id===DRAFT.id);
+      prevShopId = DB.invoices[idx].shopId;
+      DB.invoices[idx] = DRAFT;
+    } else {
+      DRAFT.id = uid('inv');
+      DB.invoices.push(DRAFT);
+    }
+    const savedShopId = DRAFT.shopId;
+    const savedId = DRAFT.id;
+    closeModal();
+    go('shop',{shopId:savedShopId});
+    await persistInvoicesForShop(savedShopId);
+    if(prevShopId && prevShopId !== savedShopId) await persistInvoicesForShop(prevShopId); // moved shops — clear it out of the old shop's key too
+    showToast('Invoice saved ✓');
+  };
+}
+function updateRowAmount(idx){
+  const it = DRAFT.items[idx];
+  const tr = document.querySelector(`#item-rows tr[data-idx="${idx}"]`);
+  if(tr) tr.querySelector('.amt').textContent = ((Number(it.qty)||0)*(Number(it.price)||0)).toFixed(2);
+}
+function updateGrandTotal(){
+  const subtotal = DRAFT.items.reduce((s,it)=> s + (Number(it.qty)||0)*(Number(it.price)||0), 0);
+  const total = roundMYR(subtotal);
+  const roundingAdj = total - subtotal;
+  const show = Math.abs(roundingAdj) >= 0.005;
+  const subRow = document.getElementById('totals-subtotal-row');
+  const rndRow = document.getElementById('totals-rounding-row');
+  if(subRow) subRow.style.display = show ? '' : 'none';
+  if(rndRow) rndRow.style.display = show ? '' : 'none';
+  const subCell = document.getElementById('totals-subtotal-cell');
+  const rndCell = document.getElementById('totals-rounding-cell');
+  const grandCell = document.getElementById('totals-grand-cell');
+  if(subCell) subCell.textContent = money(subtotal);
+  if(rndCell) rndCell.textContent = (roundingAdj>=0?'+':'') + roundingAdj.toFixed(2);
+  if(grandCell) grandCell.textContent = money(total);
+}
+
+function confirmDeleteInvoice(invId){
+  const inv = DB.invoices.find(i=>i.id===invId);
+  openModal(`
+    <div class="modal-head"><h3>Delete this invoice?</h3><button class="close-x" id="m-close">✕</button></div>
+    <div class="modal-body"><p>Delete invoice <b>${escapeHtml(inv.invoiceNo)}</b> worth <b>${money(invoiceTotal(inv))}</b>. This action cannot be undone.</p></div>
+    <div class="modal-foot"><button class="btn" id="m-cancel">Cancel</button><button class="btn btn-danger" id="m-confirm">Delete Invoice</button></div>
+  `);
+  document.getElementById('m-close').onclick = closeModal;
+  document.getElementById('m-cancel').onclick = closeModal;
+  document.getElementById('m-confirm').onclick = async ()=>{
+    const shopId = inv.shopId;
+    DB.invoices = DB.invoices.filter(i=>i.id!==invId);
+    closeModal();
+    if(VIEW.name==='invoice') go('shop',{shopId}); else render();
+    await persistInvoicesForShop(shopId);
+    showToast('Invoice deleted');
+  };
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+loadAll();
+</script>
+</body>
+</html>
