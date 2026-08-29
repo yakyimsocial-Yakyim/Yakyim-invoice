@@ -238,11 +238,17 @@
 
   @media print{
     *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
+    html,body{margin:0;padding:0;background:#fff;}
+    #app{padding:0;margin:0;max-width:none;}
     body *{visibility:hidden;}
     .invoice-doc,.invoice-doc *{visibility:visible;}
-    .invoice-doc{position:absolute;top:0;left:0;box-shadow:none;max-width:100%;}
-    .doc-wrap{padding:0;background:#fff;}
-    @page{size:A4;margin:14mm;}
+    /* position:fixed pins the invoice to all four edges of the printable
+       area itself, so the @page margin below is the ONLY thing controlling
+       spacing — no leftover width/centering/padding from the app's normal
+       layout can throw the margins off on any browser or device. */
+    .invoice-doc{position:fixed;top:0;left:0;right:0;margin:0;width:auto;max-width:none;box-shadow:none;}
+    .doc-wrap{padding:0;margin:0;background:#fff;}
+    @page{size:A4;margin:1.5cm;}
   }
 
   @media (max-width:640px){
