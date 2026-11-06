@@ -236,6 +236,33 @@
   .pill-btn{border:none;cursor:pointer;font-size:12px;}
   .pill-btn:hover{filter:brightness(0.95);}
 
+  /* ===== Invoice list: filters + month groups + row menu ===== */
+  .filter-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .filter-tabs{display:flex;gap:6px;flex-wrap:wrap;}
+  .ftab{border:1px solid var(--line);background:#fff;color:var(--ink-soft);padding:7px 14px;border-radius:20px;font-size:13px;font-weight:700;}
+  .ftab:hover{border-color:var(--navy);color:var(--navy);}
+  .ftab.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .ftab.active.f-unpaid{background:var(--bad);border-color:var(--bad);}
+  .ftab.active.f-paid{background:var(--good);border-color:var(--good);}
+  .filter-bar .input{margin-left:auto;width:200px;}
+  .month-group{border:1px solid var(--line);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;}
+  .month-head{width:100%;display:flex;align-items:center;gap:12px;flex-wrap:wrap;text-align:left;
+    background:#f4f8fb;border:none;padding:12px 14px;font-size:14px;color:var(--ink);}
+  .month-head:hover{background:#eaf2f8;}
+  .month-head .arrow{color:var(--navy);font-size:12px;width:12px;}
+  .month-head .mname{font-weight:800;color:var(--navy-darker);min-width:130px;}
+  .month-head .msub{font-size:12.5px;color:var(--ink-soft);}
+  .month-head .mamt{margin-left:auto;font-size:13px;font-weight:700;display:flex;gap:14px;flex-wrap:wrap;}
+  .month-body{padding:0 8px 6px;overflow-x:auto;}
+  .pill-overdue{background:#fff1d6;color:#9a5b00;margin-left:6px;}
+  tr.row-overdue td{background:#fffaf0;}
+  .more-btn{font-size:18px;line-height:1;padding:4px 10px;font-weight:800;}
+  .row-menu{position:fixed;z-index:150;background:#fff;border:1px solid var(--line);border-radius:8px;
+    box-shadow:0 8px 24px rgba(0,0,0,.18);padding:4px;min-width:130px;}
+  .row-menu button{display:block;width:100%;text-align:left;background:none;border:none;padding:8px 12px;
+    font-size:13px;font-weight:600;border-radius:6px;color:var(--red);}
+  .row-menu button:hover{background:var(--bad-bg);}
+
   @media print{
     *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
     html,body{margin:0;padding:0;background:#fff;}
@@ -505,6 +532,7 @@ async function safeSet(key,val,retries){
 async function syncFromServer(showFeedback){
   if(usingLocalFallback) return; // nothing to sync, this browser only
   if(document.getElementById('modal-backdrop')) return; // don't disrupt an open form
+  if(document.activeElement && document.activeElement.id==='inv-search') return; // don't interrupt typing
   if(SYNCING) return;
   SYNCING = true;
   try{
@@ -762,38 +790,88 @@ function renderDashboard(){
 /* ============================================================
    SHOP DETAIL (invoice list)
    ============================================================ */
+let invFilter = 'all', invSearch = '', openMonths = {};
+function monthLabel(k){
+  const [y,m] = k.split('-');
+  return new Date(+y,+m-1,1).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+}
+function isOverdue(inv){
+  if(inv.status==='paid') return false;
+  const days = parseInt(inv.terms)||0;
+  if(!days) return false;
+  const due = new Date(inv.date+'T00:00:00'); due.setDate(due.getDate()+days);
+  return due < new Date(new Date().toDateString());
+}
+
 function renderShopDetail(shopId){
   const shop = shopById(shopId);
   if(!shop) return `<div class="empty"><div class="big">🏬</div><h3>Shop not found</h3><p>It may have been deleted — go back and pick another shop</p></div>`;
-  const invs = invoicesForShop(shopId);
+  const all = invoicesForShop(shopId);
+  const cntUnpaid = all.filter(i=>i.status!=='paid').length;
+  const cntPaid = all.length - cntUnpaid;
+  const q = invSearch.trim().toLowerCase();
 
-  const rows = invs.map(inv=>{
-    const total = invoiceTotal(inv);
-    const paid = inv.status==='paid';
-    return `
-    <tr>
-      <td class="mono">${escapeHtml(inv.invoiceNo)}</td>
-      <td>${fmtDate(inv.date)}</td>
-      <td>${escapeHtml(inv.terms||'-')}</td>
-      <td>${inv.items.length} item${inv.items.length===1?'':'s'}</td>
-      <td><button class="pill pill-btn ${paid?'pill-paid':'pill-unpaid'}" data-toggle-status="${inv.id}" title="Click to change status">${paid?'✓ Paid':'● Unpaid'}</button></td>
-      <td class="num-right mono">${money(total)}</td>
-      <td>
-        <div class="row-actions">
+  const invs = all.filter(i=>
+    (invFilter==='all' || (invFilter==='paid') === (i.status==='paid')) &&
+    (!q || i.invoiceNo.toLowerCase().includes(q))
+  );
+
+  const groups = [];
+  invs.forEach(inv=>{
+    const k = (inv.date||'').slice(0,7);
+    let g = groups[groups.length-1];
+    if(!g || g.key!==k){ g = {key:k, list:[]}; groups.push(g); }
+    g.list.push(inv);
+  });
+
+  const forceOpen = invFilter!=='all' || q!=='';
+  const groupsHtml = groups.map((g,gi)=>{
+    const isOpen = g.key in openMonths ? openMonths[g.key] : (forceOpen || gi===0);
+    const mUnpaid = g.list.filter(i=>i.status!=='paid').reduce((s,i)=>s+invoiceTotal(i),0);
+    const mTotal = g.list.reduce((s,i)=>s+invoiceTotal(i),0);
+    const rows = g.list.map(inv=>{
+      const paid = inv.status==='paid';
+      const od = isOverdue(inv);
+      return `
+      <tr class="${od?'row-overdue':''}">
+        <td class="mono">${escapeHtml(inv.invoiceNo)}</td>
+        <td>${fmtDate(inv.date)}</td>
+        <td>${escapeHtml(inv.terms||'-')}</td>
+        <td>${inv.items.length} item${inv.items.length===1?'':'s'}</td>
+        <td><button class="pill pill-btn ${paid?'pill-paid':'pill-unpaid'}" data-toggle-status="${inv.id}" title="Click to change status">${paid?'✓ Paid':'● Unpaid'}</button>${od?'<span class="pill pill-overdue">⚠ Overdue</span>':''}</td>
+        <td class="num-right mono">${money(invoiceTotal(inv))}</td>
+        <td><div class="row-actions">
           <button class="btn btn-sm btn-ghost" data-view-invoice="${inv.id}">View</button>
           <button class="btn btn-sm btn-ghost" data-edit-invoice="${inv.id}">Edit</button>
-          <button class="btn btn-sm btn-danger" data-del-invoice="${inv.id}">Delete</button>
-        </div>
-      </td>
-    </tr>`;
+          <button class="btn btn-sm btn-ghost more-btn" data-more="${inv.id}" title="More actions">⋯</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+    return `
+    <div class="month-group">
+      <button class="month-head" data-toggle-month="${g.key}" data-open="${isOpen?'1':'0'}">
+        <span class="arrow">${isOpen?'▼':'▶'}</span>
+        <span class="mname">${escapeHtml(monthLabel(g.key))}</span>
+        <span class="msub">${g.list.length} invoice${g.list.length===1?'':'s'}</span>
+        <span class="mamt">
+          <span style="color:var(--bad);">Unpaid ${money(mUnpaid)}</span>
+          <span style="color:var(--navy-darker);">Total ${money(mTotal)}</span>
+        </span>
+      </button>
+      ${isOpen ? `<div class="month-body"><table class="list">
+        <thead><tr><th>No.</th><th>Date</th><th>Terms</th><th>Items</th><th>Status</th><th class="num-right">Total</th><th></th></tr></thead>
+        <tbody>${rows}</tbody></table></div>` : ''}
+    </div>`;
   }).join('');
 
   const empty = invs.length ? '' : `
     <div class="empty">
       <div class="big">🧾</div>
-      <h3>No invoices yet for this shop</h3>
-      <p>Click "New Invoice" to create the first one</p>
+      <h3>${all.length ? 'No invoices match this filter' : 'No invoices yet for this shop'}</h3>
+      <p>${all.length ? 'Try another filter or clear the search' : 'Click "New Invoice" to create the first one'}</p>
     </div>`;
+
+  const tab = (key,label,n,cls)=>`<button class="ftab ${cls||''} ${invFilter===key?'active':''}" data-filter="${key}">${label} ${n}</button>`;
 
   return `
   <div class="card card-pad" style="margin-bottom:16px;">
@@ -818,15 +896,16 @@ function renderShopDetail(shopId){
   </div>
 
   <div class="card card-pad">
-    <div class="section-head">
-      <h2>All Invoices (${invs.length})</h2>
+    <div class="section-head"><h2>Invoices</h2></div>
+    <div class="filter-bar">
+      <div class="filter-tabs">
+        ${tab('all','All',all.length)}
+        ${tab('unpaid','Unpaid',cntUnpaid,'f-unpaid')}
+        ${tab('paid','Paid',cntPaid,'f-paid')}
+      </div>
+      <input id="inv-search" class="input" placeholder="🔍 Search invoice no…" value="${escapeHtml(invSearch)}">
     </div>
-    ${invs.length? `<table class="list">
-      <thead><tr>
-        <th>No.</th><th>Date</th><th>Terms</th><th>Items</th><th>Status</th><th class="num-right">Total</th><th></th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>` : empty}
+    ${groupsHtml}${empty}
   </div>
   `;
 }
@@ -1000,6 +1079,10 @@ function refreshInvoiceExportLinks(inv){
 /* ============================================================
    ATTACH HANDLERS (delegation)
    ============================================================ */
+function closeRowMenu(){ const m = document.getElementById('row-menu'); if(m) m.remove(); }
+document.addEventListener('click', closeRowMenu);
+window.addEventListener('scroll', closeRowMenu, true);
+
 function attachGlobalHandlers(){
   document.querySelectorAll('[data-nav]').forEach(el=>{
     el.onclick = ()=>{
@@ -1055,6 +1138,38 @@ function attachGlobalHandlers(){
     await persistInvoicesForShop(inv.shopId);
     showToast(inv.status==='paid' ? 'Marked as paid ✓' : 'Marked as unpaid');
   };
+
+  document.querySelectorAll('[data-filter]').forEach(el=>{
+    el.onclick = ()=>{ invFilter = el.getAttribute('data-filter'); openMonths = {}; render(); };
+  });
+  document.querySelectorAll('[data-toggle-month]').forEach(el=>{
+    el.onclick = ()=>{
+      openMonths[el.getAttribute('data-toggle-month')] = el.getAttribute('data-open') !== '1';
+      render();
+    };
+  });
+  const invSearchEl = document.getElementById('inv-search');
+  if(invSearchEl){
+    invSearchEl.oninput = (e)=>{
+      invSearch = e.target.value; openMonths = {}; render();
+      const v = document.getElementById('inv-search'); v.focus(); v.setSelectionRange(v.value.length, v.value.length);
+    };
+  }
+  document.querySelectorAll('[data-more]').forEach(el=>{
+    el.onclick = (e)=>{
+      e.stopPropagation();
+      closeRowMenu();
+      const id = el.getAttribute('data-more');
+      const r = el.getBoundingClientRect();
+      const m = document.createElement('div');
+      m.className = 'row-menu'; m.id = 'row-menu';
+      m.style.top = (r.bottom + 4) + 'px';
+      m.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
+      m.innerHTML = '<button type="button">🗑 Delete invoice</button>';
+      m.querySelector('button').onclick = ()=>{ closeRowMenu(); confirmDeleteInvoice(id); };
+      document.body.appendChild(m);
+    };
+  });
 
   const catSearch = document.getElementById('catalog-search');
   if(catSearch){
