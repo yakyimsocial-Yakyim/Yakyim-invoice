@@ -358,6 +358,9 @@ let STATUS_TICK_TIMER = null;
 let RECONNECT_TIMER = null;
 let lastSyncAt = null;
 let SYNCING = false;
+let PENDING = 0;            // writes currently in flight
+let WRITE_EPOCH = 0;        // bumps every time a write starts
+const FAILED_KEYS = new Set(); // keys whose last save was NOT confirmed by the Sheet
 
 async function loadAll(){
   try{
@@ -495,21 +498,42 @@ async function safeGet(key){
 
 const sleep = (ms)=> new Promise(r=>setTimeout(r,ms));
 
+/* After each POST we read the value back from the Sheet and compare. The old
+   code trusted the opaque no-cors response, so a failed write still said "saved". */
+async function verifyRemote(key, valStr){
+  for(let i=0;i<5;i++){
+    await sleep(300*(i+1));
+    try{
+      const v = await remoteGet(key);
+      if(v === valStr) return true;
+    }catch(e){ /* try again */ }
+  }
+  return false;
+}
+
 async function safeSet(key,val,retries){
-  retries = retries===undefined ? 3 : retries;
+  retries = retries===undefined ? 2 : retries;
   const valStr = JSON.stringify(val);
 
   if(!usingLocalFallback){
     for(let attempt=0; attempt<=retries; attempt++){
       try{
-        if(HAS_REMOTE) await remoteSet(key, valStr);
-        else await window.storage.set(key, valStr, SHARED);
-        return true;
+        if(HAS_REMOTE){
+          await remoteSet(key, valStr);
+          if(await verifyRemote(key, valStr)) return true;
+          console.error('write not confirmed by Sheet', key, 'attempt', attempt);
+        } else {
+          await window.storage.set(key, valStr, SHARED);
+          return true;
+        }
+      }catch(e){
+        console.error('save fail (remote)', key, 'attempt', attempt, e);
       }
-      catch(e){
-        console.error('save fail (remote)',key,'attempt',attempt,e);
-        if(attempt<retries) await sleep(400*(attempt+1));
-      }
+      if(attempt<retries) await sleep(500*(attempt+1));
+    }
+    if(HAS_REMOTE){
+      // Do NOT silently drop to localStorage: tell the user the save failed.
+      return false;
     }
     console.warn('remote storage unavailable — switching to localStorage fallback');
     usingLocalFallback = true;
@@ -533,16 +557,23 @@ async function syncFromServer(showFeedback){
   if(usingLocalFallback) return; // nothing to sync, this browser only
   if(document.getElementById('modal-backdrop')) return; // don't disrupt an open form
   if(document.activeElement && document.activeElement.id==='inv-search') return; // don't interrupt typing
-  if(SYNCING) return;
+  // never apply server data while a write is in flight / unconfirmed,
+  // otherwise a not-yet-saved shop or invoice gets overwritten and "disappears"
+  if(SYNCING || PENDING>0 || FAILED_KEYS.size>0) return;
   SYNCING = true;
+  const epoch = WRITE_EPOCH;
   try{
     const [c,s,p] = await Promise.all([
       safeGet('company'), safeGet('shops'), safeGet('products')
     ]);
+    const shops = s || DB.shops;
+    const invoices = await loadAllInvoices(shops);
+    // a write started while we were reading -> this snapshot is stale, drop it
+    if(PENDING>0 || FAILED_KEYS.size>0 || epoch!==WRITE_EPOCH) return;
     DB.company = c || DB.company;
-    DB.shops = s || DB.shops;
+    DB.shops = shops;
     DB.products = p || DB.products;
-    DB.invoices = await loadAllInvoices(DB.shops);
+    DB.invoices = invoices;
     lastSyncAt = Date.now();
     render();
     if(showFeedback) showToast('Synced ✓');
@@ -555,7 +586,7 @@ async function syncFromServer(showFeedback){
 }
 function startAutoSync(){
   if(AUTO_SYNC_TIMER || usingLocalFallback) return;
-  AUTO_SYNC_TIMER = setInterval(()=> syncFromServer(false), HAS_REMOTE ? 8000 : 4000);
+  AUTO_SYNC_TIMER = setInterval(()=>{ retryFailed(); syncFromServer(false); }, HAS_REMOTE ? 8000 : 4000);
   // Sync immediately whenever the tab becomes visible/focused again —
   // this is what makes it FEEL real-time: the moment you switch back
   // to check on things, you see whatever a teammate just saved,
@@ -593,6 +624,7 @@ function startReconnectWatcher(){
 }
 function connStatusText(){
   if(usingLocalFallback) return '🔴 Local only — not shared with others';
+  if(FAILED_KEYS.size) return '🔴 บันทึกไม่สำเร็จ ' + FAILED_KEYS.size + ' รายการ — กำลังลองใหม่ (อย่าปิดหน้านี้)';
   if(!lastSyncAt) return '🟡 Shared — connecting…';
   const secs = Math.max(0, Math.round((Date.now()-lastSyncAt)/1000));
   const when = secs<2 ? 'just now' : secs+'s ago';
@@ -610,22 +642,39 @@ async function persistAll(){
     await persistInvoicesForShop(shop.id);
   }
 }
-async function persist(key){
+async function writeKey(key, val){
+  PENDING++; WRITE_EPOCH++;
   SAVING = true; renderSaveIndicator();
-  const ok = await safeSet(key, DB[key]);
-  SAVING = false; renderSaveIndicator();
-  if(!ok) showToast('Save failed. Retrying automatically — please check your connection and try saving again.', true);
+  let ok = false;
+  try{ ok = await safeSet(key, val); }
+  finally{ PENDING--; SAVING = PENDING>0; renderSaveIndicator(); }
+  if(ok){ FAILED_KEYS.delete(key); }
+  else{
+    FAILED_KEYS.add(key);
+    showToast('บันทึกลง Google Sheets ไม่สำเร็จ — ข้อมูลยังไม่ถูกเก็บ ระบบจะลองใหม่อัตโนมัติ (' + key + ')', true);
+  }
+  renderConnStatus();
   return ok;
 }
+function valueForKey(key){
+  if(key.indexOf('invoices__')===0){
+    const shopId = key.slice('invoices__'.length);
+    return DB.invoices.filter(i=>i.shopId===shopId);
+  }
+  return DB[key];
+}
+async function retryFailed(){
+  if(PENDING>0 || FAILED_KEYS.size===0) return;
+  const key = FAILED_KEYS.values().next().value;
+  await writeKey(key, valueForKey(key));
+}
+function persist(key){ return writeKey(key, DB[key]); }
 /* ---- Save only one shop's invoices (its own small cell/key) rather
    than the whole invoices array every time something changes. ---- */
-async function persistInvoicesForShop(shopId){
-  SAVING = true; renderSaveIndicator();
-  const list = DB.invoices.filter(i=>i.shopId===shopId);
-  const ok = await safeSet(`invoices__${shopId}`, list);
-  SAVING = false; renderSaveIndicator();
-  if(!ok) showToast('Save failed. Retrying automatically — please check your connection and try saving again.', true);
-  return ok;
+/* ---- Save only one shop's invoices (its own key) rather than the
+   whole invoices array every time something changes. ---- */
+function persistInvoicesForShop(shopId){
+  return writeKey(`invoices__${shopId}`, DB.invoices.filter(i=>i.shopId===shopId));
 }
 function renderSaveIndicator(){
   const el = document.getElementById('save-indicator');
@@ -640,7 +689,7 @@ function showToast(msg, isErr){
   const root = document.getElementById('toast-root');
   clearTimeout(toastTimer);
   root.innerHTML = `<div class="toast" style="${isErr?'background:#b3271f':''}">${isErr?'⚠':'✓'} ${escapeHtml(msg)}</div>`;
-  toastTimer = setTimeout(()=>{ root.innerHTML=''; }, 2600);
+  toastTimer = setTimeout(()=>{ root.innerHTML=''; }, isErr ? 8000 : 2600);
 }
 
 function escapeHtml(s){
@@ -699,7 +748,7 @@ function go(name, extra){
   VIEW = {name, shopId:null, invoiceId:null, ...extra};
   render();
   window.scrollTo({top:0,behavior:'smooth'});
-  syncFromServer(false); // pull latest the instant you navigate somewhere
+  setTimeout(()=> syncFromServer(false), 0); // lets a just-triggered save mark itself PENDING first
 }
 
 function renderTopbar(){
